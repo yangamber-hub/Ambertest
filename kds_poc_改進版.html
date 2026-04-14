@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDS 語音狀態控制 - POC 方案</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "微軟雅黑", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            background: white;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        nav.toc {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border-left: 4px solid #667eea;
+        }
+
+        nav.toc h2 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        nav.toc ul {
+            list-style: none;
+        }
+
+        nav.toc li {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        nav.toc a {
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav.toc a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        section {
+            margin-bottom: 50px;
+            scroll-margin-top: 100px;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            font-size: 1.4em;
+            color: #764ba2;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #764ba2;
+        }
+
+        h4 {
+            font-size: 1.1em;
+            color: #333;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+
+        .highlight strong {
+            color: #856404;
+        }
+
+        .success-box {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+
+        .value-card {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%);
+        }
+
+        .value-card h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .value-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .value-card li {
+            margin: 10px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .value-card li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .workflow-step {
+            display: flex;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .workflow-step-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .workflow-step-content {
+            flex: 1;
+        }
+
+        .workflow-step-content h4 {
+            margin-top: 0;
+            color: #667eea;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .column-item {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .column-item h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .timeline {
+            margin: 30px 0;
+        }
+
+        .timeline-item {
+            padding: 20px;
+            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline-item:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 25px;
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+        }
+
+        .timeline-item strong {
+            color: #667eea;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-card .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+        }
+
+        .feature-item.negative {
+            border-left-color: #dc3545;
+        }
+
+        .feature-item strong {
+            display: block;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Courier New", monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: "Courier New", monospace;
+            line-height: 1.5;
+        }
+
+        .phase-container {
+            background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%);
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            margin: 25px 0;
+        }
+
+        .phase-container h3 {
+            border: none;
+            padding-left: 0;
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            margin-top: 50px;
+            border-top: 2px solid #667eea;
+        }
+
+        .print-note {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.4em;
+            }
+
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .back-to-top:hover {
+            background: #764ba2;
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎤 KDS 語音狀態控制</h1>
+        <p>POC 完整方案文檔</p>
+    </header>
+
+    <div class="container">
+        <nav class="toc">
+            <h2>📋 目錄</h2>
+            <ul>
+                <li><a href="#section1">1. Executive Summary（執行摘要）</a></li>
+                <li><a href="#section2">2. 項目背景與現狀</a></li>
+                <li><a href="#section3">3. 核心問題與機會</a></li>
+                <li><a href="#section4">4. 解決方案概述</a></li>
+                <li><a href="#section5">5. 產品需求詳解</a></li>
+                <li><a href="#section6">6. 技術開發注意事項</a></li>
+                <li><a href="#section7">7. POC 計畫與成功指標</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1: Executive Summary -->
+        <section id="section1">
+            <h2>1. Executive Summary（執行摘要）</h2>
+
+            <div class="highlight">
+                <p><strong>KDS 語音狀態控制</strong>是一個為多人廚房設計的語音 AI 解決方案，用語音指令替代手工觸發，解決廚房衛生、出餐效率和數據準確性三個層級的問題。</p>
+            </div>
+
+            <div class="value-card">
+                <h4>核心價值</h4>
+                <p>讓廚師在製作完成的當下即時更新訂單狀態，消除手動更新的摩擦力，使 KDS 數據成為真正可用的業務決策依據。</p>
+            </div>
+
+            <div class="value-card">
+                <h4>目標客戶</h4>
+                <p>15-50 座位、已使用 KDS、廚房 3 人以上、在意出餐速度與員工效率的餐廳（如松屋等類型）。</p>
+            </div>
+
+            <div class="value-card">
+                <h4>POC 計畫</h4>
+                <p>以無 AI 版本開始測試，證明核心價值；後續升級 AI 版本，擴大適用場景。</p>
+            </div>
+        </section>
+
+        <!-- Section 2: Project Background -->
+        <section id="section2">
+            <h2>2. 項目背景與現狀</h2>
+
+            <h3>📊 KDS 市場現狀</h3>
+            <p>目前 KDS 系統用戶基數小，且現有系統操作流程複雜。廚師從製餐開始到出餐完成，需要經過多個步驟才能更新訂單狀態，<strong>無法實現「一鍵完成」</strong>。這種繁瑣的操作流程是導致 KDS 數據不準確的根本原因，也是市場對「更簡單、更快速的解決方案」的核心需求。</p>
+
+            <h3>💡 語音 AI 技術機會</h3>
+            <p>目前市場上<strong>還沒有成熟的餐飲廚房語音控制解決方案</strong>，但多家廠商都已經宣稱正在開發中。這意味著我們面臨一個「先發制人」的市場窗口——誰能最快推出可用的 POC，就有機會搶先佔領市場。</p>
+
+            <h3>🚀 我們的技術優勢</h3>
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>✅ 已有 KDS 基礎</h4>
+                    <p>現有 KDS 系統可直接集成語音控制層，無需從零開始</p>
+                </div>
+                <div class="column-item">
+                    <h4>🎓 與台大資工合作</h4>
+                    <p>已與台灣大學資工系合作開發 Web 線上語音點餐系統，積累了語音識別、自然語言處理的核心技術</p>
+                </div>
+                <div class="column-item">
+                    <h4>🤖 LLM 模型整合</h4>
+                    <p>可利用 Large Language Model (LLM) 提升語義理解能力，使系統更智能、更易用</p>
+                </div>
+                <div class="column-item">
+                    <h4>🔊 TTS/STT 整合準備</h4>
+                    <p>已確定整合方案，可快速部署文字轉語音 (TTS) 和語音轉文字 (STT) 功能</p>
+                </div>
+            </div>
+
+            <h3>🗺️ 產品演進路線</h3>
+            <div class="info-box">
+                <p><strong>Web/Kiosk 點餐 → 內場 KDS 語音控制 → 完整廚房工作流自動化</strong></p>
+                <p>目前的 Web 線上語音點餐是前台場景，KDS 語音狀態控制是內場場景。兩者使用相同的核心技術棧，但應用場景不同。成功的 KDS 語音解決方案，未來可延伸至：</p>
+                <ul>
+                    <li>廚房各工作站的語音協調</li>
+                    <li>前後場聯動的自動化流程</li>
+                    <li>基於語音數據的廚房效率分析</li>
+                </ul>
+            </div>
+
+            <h3>⏰ 時間和資源</h3>
+            <ul>
+                <li><strong>開發週期</strong>：1 個月內推出 POC 版本</li>
+                <li><strong>優先級</strong>：搶在競爭對手之前推出產品，建立市場先發優勢</li>
+                <li><strong>團隊配置</strong>：與台大資工系合作，確保技術可行性和創新性</li>
+            </ul>
+        </section>
+
+        <!-- Section 3: Core Problems -->
+        <section id="section3">
+            <h2>3. 核心問題與機會</h2>
+
+            <h3>🔴 問題陳述</h3>
+            <p>現今廚房內場流程中，師傅完成一道菜後，需要<strong>走去點擊 KDS 螢幕</strong>才能更新訂單狀態。這個動作帶來三個問題：</p>
+
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="number">1️⃣</div>
+                    <div class="label">衛生問題</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">2️⃣</div>
+                    <div class="label">效率延遲</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">3️⃣</div>
+                    <div class="label">數據不準確</div>
+                </div>
+            </div>
+
+            <h3>💎 三層價值定位</h3>
+
+            <div class="value-card">
+                <h4>🥉 小價值：衛生 & 快速</h4>
+                <ul>
+                    <li><strong>痛點</strong>：不用手碰螢幕 → 符合衛福部禁止觸碰食物相關法規</li>
+                    <li><strong>易於理解</strong>：直觀的衛生價值主張</li>
+                    <li><strong>局限</strong>：客戶容易理解但不夠強，缺乏商業驅動力</li>
+                </ul>
+            </div>
+
+            <div class="value-card">
+                <h4>🥈 中價值：即時更新 → 前場體驗改善</h4>
+                <ul>
+                    <li><strong>痛點</strong>：語音讓更新發生在「製作完成的當下」（師傅的自然節點）</li>
+                    <li><strong>對比</strong>：手動更新發生在「有空的時候」，尖峰期落差 3-5 分鐘</li>
+                    <li><strong>影響</strong>：前場等餐體驗完全不同，直接影響翻桌率和評分</li>
+                    <li><strong>商業意義</strong>：老闆在意出餐速度，這直接回應其核心 KPI</li>
+                </ul>
+            </div>
+
+            <div class="value-card">
+                <h4>🥇 大價值：數據準確性 → 真正的經營優化</h4>
+                <ul>
+                    <li><strong>痛點</strong>：KDS 的數據品質完全取決於師傅更新的及時性</li>
+                    <li><strong>解決</strong>：語音讓更新零摩擦 → 更新及時率提升 → 後台數據變得有意義</li>
+                    <li><strong>應用</strong>：老闆能用「品項製作時間」真正優化：菜單設計、人員排班、原料備料</li>
+                    <li><strong>最高價值</strong>：從經驗決策 → 數據驅動決策，這是最少人想到但最有商業價值的部分</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Section 4: Solutions -->
+        <section id="section4">
+            <h2>4. 解決方案概述</h2>
+
+            <h3>方案一：無 AI 版本（基礎版・POC 首選）</h3>
+
+            <h4>工作原理</h4>
+            <ul>
+                <li>師傅說出<strong>完整的、預定義的詞彙</strong>（如「雞腿飯完成」、「榻榻米炒飯出餐」）</li>
+                <li>系統進行<strong>精確詞匹配</strong>，直接對應 KDS 中的訂單狀態</li>
+                <li>不需要自然語言理解，邏輯簡單、穩定</li>
+            </ul>
+
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>✅ 優勢</h4>
+                    <ul>
+                        <li>開發難度低、部署快速</li>
+                        <li>適合規模小、品項單一的餐廳</li>
+                        <li>零網路依賴（可本地部署）</li>
+                        <li>成本低</li>
+                    </ul>
+                </div>
+                <div class="column-item">
+                    <h4>❌ 限制</h4>
+                    <ul>
+                        <li>廚師必須使用標準用語，容易出錯</li>
+                        <li>菜名變化、規格差異需要額外配置</li>
+                        <li>無法理解上下文和自然表達</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>方案二：AI 版本（進階版）</h3>
+
+            <h4>工作原理</h4>
+            <ul>
+                <li>師傅可用<strong>自然語言表達</strong>（「好了」、「這份雞腿飯可以上了」、「炒飯都好」）</li>
+                <li><strong>LLM 模型</strong>理解語義，結合當天訂單 context 推斷具體品項</li>
+                <li>系統自動對應正確的訂單狀態</li>
+            </ul>
+
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>✅ 優勢</h4>
+                    <ul>
+                        <li>理解能力強，適應場景廣</li>
+                        <li>廚師無需記憶特定詞彙</li>
+                        <li>可處理菜名變化、規格差異</li>
+                        <li>語義辨識能力強，誤觸發率低</li>
+                    </ul>
+                </div>
+                <div class="column-item">
+                    <h4>❌ 限制</h4>
+                    <ul>
+                        <li>開發複雜，需要訓練語音模型</li>
+                        <li>可能需要網路連接</li>
+                        <li>成本更高</li>
+                        <li>需要足夠訂單 context 進行推斷</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>兩版本對比</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>維度</th>
+                        <th>無 AI 版</th>
+                        <th>AI 版</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>開發難度</strong></td>
+                        <td>低</td>
+                        <td>高</td>
+                    </tr>
+                    <tr>
+                        <td><strong>語音理解</strong></td>
+                        <td>精確詞匹配</td>
+                        <td>自然語言理解</td>
+                    </tr>
+                    <tr>
+                        <td><strong>適用場景</strong></td>
+                        <td>簡單、標準化</td>
+                        <td>複雜、多樣化</td>
+                    </tr>
+                    <tr>
+                        <td><strong>廚師學習成本</strong></td>
+                        <td>高（需記住詞彙）</td>
+                        <td>低（自然表達）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>菜名變化適應</strong></td>
+                        <td>需重新配置</td>
+                        <td>自動適應</td>
+                    </tr>
+                    <tr>
+                        <td><strong>部署速度</strong></td>
+                        <td>快</td>
+                        <td>慢</td>
+                    </tr>
+                    <tr>
+                        <td><strong>成本</strong></td>
+                        <td>低</td>
+                        <td>高</td>
+                    </tr>
+                    <tr>
+                        <td><strong>推薦客戶</strong></td>
+                        <td>POC 驗證、小規模餐廳</td>
+                        <td>規模餐廳、複雜場景</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 5: Product Requirements -->
+        <section id="section5">
+            <h2>5. 產品需求詳解</h2>
+
+            <h3>5.1 使用場景</h3>
+
+            <p><strong>核心場景</strong>：多人廚房內場、多站台、工作繁忙時段</p>
+
+            <div class="info-box">
+                <h4>具體情境</h4>
+                <ul>
+                    <li>廚師雙手被占用（拿著食物、器具）</li>
+                    <li>多人同時作業，無法離開工作站去點螢幕</li>
+                    <li>衛生要求不允許直接接觸螢幕</li>
+                    <li>訂單急件多、需要快速反饋</li>
+                    <li>內用 + 外送訂單混合，協調壓力大</li>
+                </ul>
+            </div>
+
+            <h3>5.2 目標用戶（POC 首選）</h3>
+
+            <div class="value-card">
+                <h4>企業檔案</h4>
+                <ul>
+                    <li><strong>店型</strong>：類似松屋等連鎖定食/快餐廳</li>
+                    <li><strong>規模</strong>：15-50 座位</li>
+                    <li><strong>廚房人數</strong>：3 人以上</li>
+                    <li><strong>現有系統</strong>：已經在使用我們的 KDS</li>
+                    <li><strong>訂單來源</strong>：同時有內用 + 外送</li>
+                </ul>
+            </div>
+
+            <h3>5.3 核心功能流程</h3>
+
+            <p>語音 KDS 的核心流程分為 <strong>12 個環節</strong>，從廚師說話的那一刻起，到訂單狀態在系統中更新為止。</p>
+
+            <div class="phase-container">
+                <h3>第一階段：語音捕捉 & 識別</h3>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">1️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>喚醒詞檢測</h4>
+                        <ul>
+                            <li>系統持續監聽麥克風輸入，識別喚醒詞（如「好了」、「完成」）</li>
+                            <li>喚醒詞確認後，啟動主動錄音模式</li>
+                            <li>避免日常對話被誤觸發的機制</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">2️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>語音採集</h4>
+                        <ul>
+                            <li>廚師佩戴的無線麥克風（小蜜蜂）開始錄音</li>
+                            <li>捕捉廚師的完整語音命令（喚醒詞 + 品項名稱）</li>
+                            <li>實時發送音頻流到後端系統</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">3️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>音源識別</h4>
+                        <ul>
+                            <li>系統識別語音來自哪支麥克風（對應的音源 channel）</li>
+                            <li>根據麥克風 ID 確定說話者身份和所屬工作站</li>
+                            <li>建立「誰說的」→「負責訂單」的對應關係</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-container">
+                <h3>第二階段：語音轉文字 & 語義理解</h3>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">4️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>語音轉文字 (STT - Speech-to-Text)</h4>
+                        <ul>
+                            <li>將廚師的語音轉換成文字</li>
+                            <li>例如：「好了，雞腿飯」→ 文字 "好了，雞腿飯"</li>
+                            <li>STT 應在低延遲環境下完成（&lt; 1 秒）</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">5️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>語義理解 (AI 版本使用)</h4>
+                        <ul>
+                            <li>LLM 模型接收文字輸入，理解廚師的實際意圖</li>
+                            <li>例如：「炒飯都好」→ 理解為「所有炒飯製作完成」</li>
+                            <li>結合當天訂單 context（訂單列表、時間、狀態），推斷具體是哪些訂單</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">6️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>詞彙匹配 (無 AI 版本使用)</h4>
+                        <ul>
+                            <li>系統與預定義的詞彙表進行精確匹配</li>
+                            <li>如果完全匹配，則確定對應的訂單 ID</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-container">
+                <h3>第三階段：訂單對應 & 驗證</h3>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">7️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>訂單查詢</h4>
+                        <ul>
+                            <li>根據麥克風對應的廚師身份和工作站，查詢當前未完成的訂單列表</li>
+                            <li>縮小搜尋範圍，提升匹配準確度</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">8️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>狀態驗證</h4>
+                        <ul>
+                            <li>確認識別出的品項名稱是否與待完成訂單匹配</li>
+                            <li>檢查識別信心度（confidence score）</li>
+                            <li>如果信心度 &gt; 90%，自動更新；如果 &lt; 90%，進入確認流程</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">9️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>人工確認流程</h4>
+                        <ul>
+                            <li>系統文字轉語音 (TTS)，用語音詢問廚師：「確認完成的是雞腿飯嗎？」</li>
+                            <li>廚師回答「是」或「否」</li>
+                            <li>保障在複雜環境（多人、噪音）下的準確性</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phase-container">
+                <h3>第四階段：狀態更新 & 通知</h3>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">🔟</div>
+                    <div class="workflow-step-content">
+                        <h4>KDS 狀態更新</h4>
+                        <ul>
+                            <li>訂單狀態從「製作中」更新為「完成」或「待取餐」</li>
+                            <li>同步更新 KDS 系統的顯示畫面</li>
+                            <li>觸發前場通知邏輯</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">1️⃣1️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>數據記錄</h4>
+                        <p>記錄以下信息用於分析和優化：</p>
+                        <ul>
+                            <li>語音命令的原始文字</li>
+                            <li>識別時間戳（精確到秒）</li>
+                            <li>廚師 ID 和工作站 ID</li>
+                            <li>對應的訂單 ID</li>
+                            <li>識別信心度和處理耗時</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="workflow-step-number">1️⃣2️⃣</div>
+                    <div class="workflow-step-content">
+                        <h4>前場通知</h4>
+                        <p>系統通知前場員工：「雞腿飯（訂單 #123）已完成，可出餐」</p>
+                        <p>可通過多種方式通知：</p>
+                        <ul>
+                            <li>KDS 屏幕亮起</li>
+                            <li>聲音提示（「某某餐點已完成」）</li>
+                            <li>手機 push 通知（如使用 App）</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h3>關鍵性能指標</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>環節</th>
+                        <th>目標耗時</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>喚醒檢測 → STT</td>
+                        <td><strong>&lt; 1s</strong></td>
+                        <td>從說話到轉文字</td>
+                    </tr>
+                    <tr>
+                        <td>STT → 語義理解</td>
+                        <td><strong>&lt; 0.5s</strong></td>
+                        <td>無 AI 版本瞬間完成</td>
+                    </tr>
+                    <tr>
+                        <td>訂單查詢 → 驗證</td>
+                        <td><strong>&lt; 0.5s</strong></td>
+                        <td>本地數據庫查詢</td>
+                    </tr>
+                    <tr>
+                        <td>狀態更新 → 通知</td>
+                        <td><strong>&lt; 0.5s</strong></td>
+                        <td>前場即時反饋</td>
+                    </tr>
+                    <tr style="background: #fff3cd;">
+                        <td><strong>端到端總耗時</strong></td>
+                        <td><strong>&lt; 2s</strong></td>
+                        <td>從說話到前場看到通知</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>5.4 使用者交互流程</h3>
+
+            <h4>角色與權限</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>角色</th>
+                        <th>主要職責</th>
+                        <th>可用功能</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>廚師</strong></td>
+                        <td>製作菜餚、語音更新狀態</td>
+                        <td>語音命令、麥克風控制</td>
+                    </tr>
+                    <tr>
+                        <td><strong>班長/主管</strong></td>
+                        <td>監督進度、問題解決</td>
+                        <td>KDS 監控、優先級調整、員工績效查看</td>
+                    </tr>
+                    <tr>
+                        <td><strong>老闆</strong></td>
+                        <td>經營決策、數據分析</td>
+                        <td>儀表板、數據報表、客製化設定</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 6: Technical Considerations -->
+        <section id="section6">
+            <h2>6. 技術開發注意事項</h2>
+
+            <h3>6.1 喚醒詞機制設計</h3>
+            <div class="info-box">
+                <h4>設計原則</h4>
+                <ul>
+                    <li>選擇<strong>明確、獨特</strong>的喚醒詞（如「開始」、「好了」、「完成」）</li>
+                    <li>喚醒詞<strong>不能與菜名衝突</strong></li>
+                    <li>支持多個喚醒詞組合，增加識別穩定性</li>
+                </ul>
+            </div>
+
+            <h3>6.2 多麥克風音源隔離 ⭐ 重點</h3>
+            <div class="highlight">
+                <h4>問題</h4>
+                <p>多人廚房同時說話，系統需要知道「是誰說的」</p>
+                <h4>解決方案</h4>
+                <ul>
+                    <li>每支無線麥克風（小蜜蜂）對應一個<strong>獨立音源 channel</strong></li>
+                    <li>後端需要<strong>音源定位能力</strong>，區分不同麥克風的輸入</li>
+                    <li>根據麥克風 ID → 對應該廚師負責的訂單</li>
+                </ul>
+            </div>
+
+            <h3>6.3 菜品同名辨識</h3>
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>無 AI 版本</h4>
+                    <ul>
+                        <li>廚師說出完整的訂單代號或規格名稱</li>
+                        <li>例如：「A12 雞腿飯完成」</li>
+                    </ul>
+                </div>
+                <div class="column-item">
+                    <h4>AI 版本</h4>
+                    <ul>
+                        <li>LLM 根據當日訂單 context 推斷</li>
+                        <li>結合時間戳、訂單狀態、廚師負責區域進行消歧</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>6.4 其他技術考量</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>功能</th>
+                        <th>說明</th>
+                        <th>優先級</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>設備管理 API</td>
+                        <td>監控麥克風電量、斷線告警</td>
+                        <td>P2</td>
+                    </tr>
+                    <tr>
+                        <td>語音設定頁面</td>
+                        <td>讓用戶自訂喚醒詞、詞彙對應</td>
+                        <td>P2</td>
+                    </tr>
+                    <tr>
+                        <td>班次整合</td>
+                        <td>與上下班/站台打卡系統連動</td>
+                        <td>P2</td>
+                    </tr>
+                    <tr>
+                        <td>多語言支持</td>
+                        <td>廣東話/普通話/台語等</td>
+                        <td>P3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 7: POC Plan -->
+        <section id="section7">
+            <h2>7. POC 計畫與成功指標</h2>
+
+            <h3>7.1 POC 目標客戶檔案</h3>
+            <div class="success-box">
+                <h4>優選特徵</h4>
+                <ul>
+                    <li>店型：連鎖定食、快餐店（如松屋模式）</li>
+                    <li>座位數：15-50 座位</li>
+                    <li>廚房人數：3-5 人</li>
+                    <li>現有系統：已使用我們的 KDS</li>
+                    <li>訂單構成：內用 + 外送混合</li>
+                    <li>老闆意願：積極提升效率、願意試用新技術</li>
+                    <li>菜單：相對標準化（利於 POC 快速驗證）</li>
+                </ul>
+            </div>
+
+            <h3>7.2 POC 範圍</h3>
+            <div class="two-column">
+                <div class="column-item">
+                    <h4>✅ 核心功能</h4>
+                    <ul>
+                        <li>無線麥克風採集語音</li>
+                        <li>系統識別預定義詞彙</li>
+                        <li>自動更新 KDS 訂單狀態</li>
+                        <li>多麥克風並行識別</li>
+                    </ul>
+                </div>
+                <div class="column-item">
+                    <h4>⏭️ 排除範圍（V2+）</h4>
+                    <ul>
+                        <li>設備管理 API</li>
+                        <li>語音設定頁面</li>
+                        <li>班次打卡整合</li>
+                        <li>AI 版本</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>7.3 成功指標</h3>
+            <h4>定量指標</h4>
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="number">≥ 95%</div>
+                    <div class="label">語音識別準確率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">≤ 2s</div>
+                    <div class="label">系統響應時間</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">-10%</div>
+                    <div class="label">出餐時間改善</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">≥ 90%</div>
+                    <div class="label">更新及時率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">≥ 80%</div>
+                    <div class="label">廚師使用習慣度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="number">≤ 2%</div>
+                    <div class="label">誤觸發率</div>
+                </div>
+            </div>
+
+            <h3>7.4 POC 時間軸</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <strong>第 1 週：硬體部署 & 廚師培訓</strong>
+                    <ul>
+                        <li>Day 1-2：無線麥克風安裝、KDS 連接</li>
+                        <li>Day 3：廚師上手培訓（喚醒詞、操作流程）</li>
+                        <li>Day 4-5：內部測試、調整參數</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <strong>第 2 週：運營驗證 & 數據收集</strong>
+                    <ul>
+                        <li>Day 1-7：實際營業運行，記錄使用日誌</li>
+                        <li>每日監控：識別準確率、響應時間、出餐時間</li>
+                        <li>及時調整：噪音抑制、詞彙優化</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <strong>第 3 週：評估 & 決策</strong>
+                    <ul>
+                        <li>分析數據，評估三層價值是否達成</li>
+                        <li>廚師、前場、老闆反饋收集</li>
+                        <li>決定：全面推行、優化迭代、或擱置</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>🎯 關鍵節點</h4>
+                <ul>
+                    <li><strong>Day 7</strong>：系統穩定性評估（是否有重大 bug）</li>
+                    <li><strong>Day 14</strong>：數據初步分析（是否達到最小可行指標）</li>
+                    <li><strong>Day 21</strong>：最終評估 & 老闆決策</li>
+                </ul>
+            </div>
+
+            <h3>7.5 成功後的後續計畫</h3>
+            <div class="value-card">
+                <h4>短期（1-2 個月）</h4>
+                <ul>
+                    <li>在目標客戶全面部署</li>
+                    <li>收集實際運營數據，優化演算法</li>
+                </ul>
+            </div>
+
+            <div class="value-card">
+                <h4>中期（2-3 個月）</h4>
+                <ul>
+                    <li>升級至 AI 版本（語義理解）</li>
+                    <li>擴大客戶基數，進行市場驗證</li>
+                </ul>
+            </div>
+
+            <div class="value-card">
+                <h4>長期（6+ 個月）</h4>
+                <ul>
+                    <li>完整功能集成（設備管理、班次整合等）</li>
+                    <li>形成完整的「廚房效率 SaaS」產品線</li>
+                </ul>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <p><strong>KDS 語音狀態控制 - POC 完整方案</strong></p>
+        <p>此文檔為專業提案文檔，可用於分享給利益相關者和開發團隊</p>
+        <p class="print-note">建議使用 Google Chrome、Firefox 或 Safari 瀏覽器閱讀，支持列印成 PDF</p>
+    </footer>
+
+    <div class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        ↑
+    </div>
+
+    <script>
+        // 平滑滾動
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // 顯示/隱藏返回頂部按鈕
+        window.addEventListener('scroll', function() {
+            const btn = document.querySelector('.back-to-top');
+            if (window.pageYOffset > 300) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
