@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiosk 服務設定原型</title>
+    <style>
+        :root {
+            --orange: #FFA500;
+            --teal: #78C2B4;
+            --light-teal: #DAEDE9;
+            --gray-track: #E0E0E0;
+            --gray-button: #808080;
+            --border-line: #999999;
+        }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0;
+            margin: 0;
+        }
+
+        .phone-frame {
+            width: 380px;
+            background-color: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 20px;
+            overflow: hidden;
+        }
+
+        /* 標題區域 */
+        .header-top { color: #666; font-size: 24px; text-align: center; padding: 10px 0; background-color: #000; width: 100%; }
+        .orange-header { background-color: var(--orange); padding: 15px 0; text-align: center; font-size: 26px; font-weight: bold; color: #000; }
+        .container { padding: 0 20px; }
+        .section-title { font-size: 19px; font-weight: bold; margin: 20px 0 10px 0; }
+        .divider { border-top: 2px solid var(--border-line); margin: 15px 0; }
+
+        /* 開關 Toggle 樣式 */
+        .toggle-container { display: flex; align-items: center; background-color: var(--light-teal); border-radius: 20px; width: 85px; height: 32px; padding: 0 4px; position: relative; cursor: pointer; }
+        .toggle-text { color: var(--teal); font-size: 16px; font-weight: bold; margin-left: 8px; }
+        .toggle-circle { width: 24px; height: 24px; background-color: var(--teal); border-radius: 50%; position: absolute; right: 4px; }
+        
+        .toggle-container.off { background-color: #EEE; }
+        .toggle-container.off .toggle-text { color: #999; margin-left: 35px; }
+        .toggle-container.off .toggle-circle { background-color: #CCC; left: 4px; right: auto; }
+
+        /* 列表列樣式 */
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+        .row-label { font-size: 18px; padding-left: 10px; }
+
+        /* 時段設定區域 - 已去除綠框與時鐘 */
+        #time-settings-area { 
+            padding: 5px 10px 15px 10px;
+            margin-bottom: 5px;
+            background-color: transparent; 
+        }
+        .time-setting-title { 
+            font-weight: bold; 
+            color: #000; 
+            margin-bottom: 12px; 
+            font-size: 18px; 
+        }
+        .time-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 16px; 
+            padding: 8px 0;
+            border-bottom: 1px solid #EEE; 
+        }
+        .time-row:last-child { border-bottom: none; }
+        
+        .btn-edit-time { 
+            background-color: white; 
+            border: 1px solid var(--teal); 
+            color: var(--teal); 
+            padding: 3px 12px; 
+            border-radius: 15px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+
+        /* 底部按鈕 */
+        .footer { margin-top: 20px; display: flex; flex-direction: column; align-items: center; }
+        .btn-exit-big { background-color: var(--gray-button); color: white; width: 85%; padding: 15px 0; border-radius: 8px; font-size: 22px; border: none; margin-bottom: 20px; }
+        .btn-cancel-text { color: #666; font-size: 22px; text-decoration: none; padding-bottom: 20px; }
+
+        /* 本機 Checkbox 模擬 */
+        .box { width: 22px; height: 22px; border: 2px solid var(--teal); position: relative; }
+        .box.checked::after { content: '✓'; position: absolute; left: 2px; top: -3px; color: var(--teal); font-weight: bold; font-size: 18px; }
+
+        /* 時間選取彈窗 (Modal) */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 80%; border-radius: 12px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; color: var(--teal); }
+        .time-input-group { margin-bottom: 15px; }
+        .time-input-group label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; }
+        .time-input-group input { width: 100%; padding: 10px; font-size: 18px; border: 1px solid #DDD; border-radius: 6px; box-sizing: border-box; font-family: sans-serif; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        .btn-confirm { background-color: var(--teal); color: white; }
+        .btn-close { background-color: #EEE; color: #666; }
+    </style>
+</head>
+<body>
+
+    <div class="header-top">員工專區</div>
+
+    <div class="phone-frame">
+        <div class="orange-header">服務類型</div>
+
+        <div class="container">
+            <div class="section-title">本機</div>
+            <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
+                <div style="display:flex; align-items:center; gap:8px;"><div class="box checked"></div> 全部</div>
+                <div style="display:flex; align-items:center; gap:8px;"><div class="box"></div> 內用</div>
+                <div style="display:flex; align-items:center; gap:8px;"><div class="box"></div> 外帶</div>
+            </div>
+            <div class="divider"></div>
+
+            <!-- 網頁點餐 & 團體點餐 -->
+            <div class="row"><div class="section-title" style="margin:0;">網頁點餐</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div class="row"><div class="row-label">內用</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div class="row"><div class="row-label">外帶</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div class="row"><div class="row-label">外送</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div class="divider"></div>
+
+            <div class="row"><div class="section-title" style="margin:0;">團體點餐</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div class="row"><div class="row-label">外帶</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div class="row"><div class="row-label">外送</div><div class="toggle-container"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div></div>
+            <div style="height: 45px; text-align:right;"><button style="background-color: var(--teal); color: white; border: none; padding: 8px 25px; border-radius: 6px; font-size: 16px; cursor: pointer;">儲存</button></div>
+            <div class="divider"></div>
+
+            <!-- 點餐機營業狀態 (控制中心) -->
+            <div class="row">
+                <div class="section-title" style="margin:0; font-size: 18px;">點餐機營業狀態</div>
+                <div class="toggle-container" id="business-toggle"><span class="toggle-text">開啟</span><div class="toggle-circle"></div></div>
+            </div>
+
+            <!-- 連動區域：Kiosk 時段設定 -->
+            <div id="time-settings-area">
+                <div class="time-setting-title">服務類型時段設定</div>
+                <div class="time-row">
+                    <span>內用開放時間：<strong id="display-time-1">09:00 ～ 15:00</strong></span>
+                    <button class="btn-edit-time" onclick="openTimeModal(1, '內用時段設定')">編輯</button>
+                </div>
+                <div class="time-row">
+                    <span>外帶開放時間：<strong id="display-time-2">09:00 ～ 18:00</strong></span>
+                    <button class="btn-edit-time" onclick="openTimeModal(2, '外帶時段設定')">編輯</button>
+                </div>
+            </div>
+
+            <!-- 維護模式 -->
+            <div class="row">
+                <div class="section-title" style="margin:0; font-size: 18px;">維護模式</div>
+                <div class="toggle-container off"><span class="toggle-text">關閉</span><div class="toggle-circle"></div></div>
+            </div>
+
+            <div class="footer"><button class="btn-exit-big">退出</button></div>
+        </div>
+
+        <!-- 時間選取彈窗 -->
+        <div class="modal-overlay" id="timeModal">
+            <div class="modal-box">
+                <div class="modal-title" id="modalTitle">時段設定</div>
+                <div class="time-input-group">
+                    <label>開始供應時間</label>
+                    <input type="time" id="startTimeInput">
+                </div>
+                <div class="time-input-group">
+                    <label>結束供應時間</label>
+                    <input type="time" id="endTimeInput">
+                </div>
+                <div class="modal-btns">
+                    <button class="btn-modal btn-close" onclick="closeTimeModal()">取消</button>
+                    <button class="btn-modal btn-confirm" onclick="confirmTime()">確認儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="#" class="btn-cancel-text">取消</a>
+
+    <script>
+        let currentEditingId = null;
+
+        // 監聽所有開關的點擊
+        document.querySelectorAll('.toggle-container').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                // 切換樣式
+                this.classList.toggle('off');
+                const isOff = this.classList.contains('off');
+                const text = this.querySelector('.toggle-text');
+                text.innerText = isOff ? '關閉' : '開啟';
+
+                // 特別判斷「點餐機營業狀態」開關 (id 為 business-toggle)
+                if (this.id === 'business-toggle') {
+                    const timeArea = document.getElementById('time-settings-area');
+                    if (isOff) {
+                        timeArea.style.display = 'none'; // 關閉時隱藏
+                    } else {
+                        timeArea.style.display = 'block'; // 開啟時顯示
+                    }
+                }
+            });
+        });
+
+        // 彈窗編輯功能
+        function openTimeModal(id, title) {
+            currentEditingId = id;
+            document.getElementById('modalTitle').innerText = title;
+            const currentTimeStr = document.getElementById('display-time-' + id).innerText;
+            const times = currentTimeStr.split(' ～ ');
+            document.getElementById('startTimeInput').value = times[0];
+            document.getElementById('endTimeInput').value = times[1];
+            document.getElementById('timeModal').style.display = 'flex';
+        }
+
+        function closeTimeModal() {
+            document.getElementById('timeModal').style.display = 'none';
+        }
+
+        function confirmTime() {
+            const start = document.getElementById('startTimeInput').value;
+            const end = document.getElementById('endTimeInput').value;
+            if (start && end) {
+                document.getElementById('display-time-' + currentEditingId).innerText = start + ' ～ ' + end;
+                closeTimeModal();
+            }
+        }
+    </script>
+</body>
+</html>
