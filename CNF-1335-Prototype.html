@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNF-1335 · 服務類型時段設定 Prototype</title>
+<style>
+:root {
+  color-scheme: light;
+  --brand: #E8472E;
+  --teal: #3CBCA8;
+  --navy: #1B2A4A;
+  --bg: #F2F4F8;
+  --text: #1B2A4A;
+  --text-2: #5A6880;
+  --border: #DDE3EC;
+  --success: #12B76A;
+  --gold: #F5A623;
+  --purple: #6366F1;
+  --kbg: #0B0F1C;
+  --kcard: #131827;
+  --kborder: #252D3F;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;background:#E0E4ED;overflow:hidden;height:100vh;}
+
+.topnav{height:52px;background:#1B2A4A;display:flex;align-items:center;padding:0 16px;gap:6px;position:fixed;top:0;left:0;right:0;z-index:300;}
+.nav-brand{font-size:13px;font-weight:700;color:#fff;letter-spacing:1px;margin-right:8px;}
+.nav-brand span{color:var(--brand);}
+.nav-tag{font-size:10px;color:#6B7B93;background:rgba(255,255,255,.07);padding:2px 8px;border-radius:4px;margin-right:12px;}
+.scene-tab{display:flex;align-items:center;gap:5px;padding:5px 13px;border-radius:8px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.45);font-size:12px;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;}
+.scene-tab:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);}
+.scene-tab.active{background:rgba(232,71,46,.2);border-color:rgba(232,71,46,.5);color:#FF7A65;}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.15);flex-shrink:0;}
+
+.stage{position:fixed;top:52px;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;background:#E0E4ED;}
+.screen{display:none;width:100%;height:100%;align-items:center;justify-content:center;}
+.screen.active{display:flex;}
+
+/* ════ KIOSK ════ */
+.kiosk-device{width:520px;height:740px;background:var(--kbg);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 0 #1a1a2a,0 16px 40px rgba(0,0,0,.55),inset 0 0 0 1.5px rgba(255,255,255,.06);border:2px solid #252D3F;}
+.kiosk-status-bar{height:28px;background:#080B14;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0;}
+.ksb-left{font-size:10px;color:#4B5A72;}
+.ksb-right{display:flex;gap:8px;font-size:9px;color:#4B5A72;}
+.kiosk-header{background:var(--kcard);border-bottom:1px solid var(--kborder);padding:18px 24px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.kiosk-logo-area{display:flex;align-items:center;gap:12px;}
+.kiosk-logo-circle{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#E8472E,#C93D25);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.kiosk-name{font-size:17px;font-weight:700;color:#F0E8DC;letter-spacing:2px;}
+.kiosk-store{font-size:10px;color:#4B5A72;margin-top:2px;}
+.kiosk-clock-box{background:#0D111E;border:1px solid #252D3F;border-radius:10px;padding:8px 14px;text-align:right;}
+.kiosk-time{font-size:24px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:2px;}
+.kiosk-date-str{font-size:9px;color:#4B5A72;margin-top:2px;}
+.kiosk-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 36px;gap:28px;}
+.kiosk-welcome-en{font-size:11px;color:#4B5A72;letter-spacing:3px;margin-bottom:6px;text-align:center;}
+.kiosk-welcome-zh{font-size:26px;font-weight:700;color:#F0E8DC;letter-spacing:4px;text-align:center;}
+.kiosk-divider{width:40px;height:2px;background:linear-gradient(90deg,transparent,#E8472E,transparent);border-radius:2px;}
+.kiosk-prompt{font-size:13px;color:#6B7B93;letter-spacing:2px;text-align:center;}
+.kiosk-btns{display:flex;gap:16px;}
+.kbtn{flex:1;min-width:156px;border-radius:20px;border:1.5px solid var(--kborder);background:var(--kcard);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px 28px;cursor:pointer;transition:all .2s;gap:14px;position:relative;overflow:hidden;}
+.kbtn:hover{border-color:var(--brand);background:#1A2234;transform:translateY(-3px);box-shadow:0 12px 30px rgba(232,71,46,.2);}
+.kbtn.selected{border-color:var(--brand);background:rgba(232,71,46,.12);}
+.kbtn-badge{position:absolute;top:10px;right:10px;background:var(--success);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+.kbtn-icon{font-size:54px;line-height:1;transition:transform .2s;}
+.kbtn:hover .kbtn-icon{transform:scale(1.08);}
+.kbtn-label{font-size:20px;font-weight:700;color:#F0E8DC;letter-spacing:5px;}
+.kbtn-wide{min-width:220px;}
+.kiosk-notice-box{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.25);border-radius:14px;padding:14px 18px;text-align:center;max-width:360px;width:100%;}
+.kn-title{font-size:11px;font-weight:700;color:var(--gold);margin-bottom:5px;}
+.kn-text{font-size:11px;color:#6B7B93;line-height:1.7;}
+.kiosk-footer{padding:14px 24px;background:var(--kcard);border-top:1px solid var(--kborder);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.kf-device{font-size:10px;color:#3D4D66;}
+.kf-lang{font-size:10px;color:#4B5A72;background:#0D111E;border:1px solid #252D3F;border-radius:5px;padding:3px 9px;cursor:pointer;}
+
+/* ════ EMPLOYEE PANEL ════ */
+.emp-device{width:390px;height:740px;background:#F2F2F2;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 0 #1a1a2a,0 16px 40px rgba(0,0,0,.5),inset 0 0 0 1.5px rgba(255,255,255,.1);border:2px solid #3A3A3A;}
+.emp-topbar{height:34px;background:#2D2D2D;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.emp-topbar-text{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:1px;}
+.emp-title-bar{background:var(--gold);padding:12px 0;text-align:center;flex-shrink:0;}
+.emp-title-text{font-size:18px;font-weight:700;color:#1A1A1A;letter-spacing:3px;}
+.emp-scroll{flex:1;overflow-y:auto;background:#F2F2F2;}
+.emp-scroll::-webkit-scrollbar{width:3px;}
+.emp-scroll::-webkit-scrollbar-thumb{background:#CCC;border-radius:2px;}
+.emp-section{background:#fff;margin-bottom:8px;padding:0 16px;}
+.emp-section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #EBEBEB;}
+.emp-section-name{font-size:15px;font-weight:700;color:#222;}
+.emp-row{display:flex;align-items:center;justify-content:space-between;min-height:50px;border-bottom:1px solid #F5F5F5;gap:8px;}
+.emp-row:last-child{border-bottom:none;}
+.emp-row-label{font-size:14px;color:#333;font-weight:500;}
+.emp-tog{width:50px;height:28px;border-radius:14px;border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.emp-tog.on{background:var(--teal);}
+.emp-tog.off{background:#C8C8C8;}
+.emp-tog::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.emp-tog.on::after{left:25px;}
+.emp-tog.off::after{left:3px;}
+.emp-tog-lbl{font-size:13px;font-weight:700;min-width:24px;}
+.emp-tog-lbl.on{color:var(--teal);}
+.emp-tog-lbl.off{color:#999;}
+.emp-tog-wrap{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.mode-val-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.mode-val-chip{font-size:13px;font-weight:700;color:var(--teal);background:rgba(60,188,168,.1);border:1.5px solid rgba(60,188,168,.3);border-radius:8px;padding:5px 14px;transition:all .15s;}
+.mode-val-wrap:hover .mode-val-chip{background:rgba(60,188,168,.2);}
+.readonly-badge{font-size:10px;color:#999;background:#F0F0F0;border:1px solid #E0E0E0;border-radius:4px;padding:2px 7px;}
+.chk-group{display:flex;gap:14px;padding:10px 0;}
+.chk-item{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:#333;}
+.chk-box{width:22px;height:22px;border:2px solid #CCC;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:all .2s;flex-shrink:0;}
+.chk-item.active .chk-box{background:var(--teal);border-color:var(--teal);color:#fff;}
+.btn-display-section{padding:10px 0 0;}
+.btn-display-title{font-size:13px;font-weight:600;color:#444;margin-bottom:10px;}
+.svc-time-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F5F5F5;flex-wrap:wrap;}
+.svc-time-row:last-child{border-bottom:none;padding-bottom:6px;}
+.svc-time-label{font-size:14px;color:#333;font-weight:600;width:30px;flex-shrink:0;}
+.mini-seg{display:inline-flex;background:#EBEBEB;border-radius:18px;padding:2px;flex-shrink:0;}
+.mini-seg-btn{padding:4px 11px;border-radius:16px;border:none;background:transparent;color:#888;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s;white-space:nowrap;}
+.mini-seg-btn.active{background:#fff;color:var(--teal);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.svc-time-val-wrap{display:flex;align-items:center;gap:6px;}
+.svc-time-val{font-size:12.5px;color:#333;font-weight:500;font-variant-numeric:tabular-nums;background:#F5F5F5;border-radius:6px;padding:3px 8px;}
+.emp-edit-btn{padding:4px 10px;border-radius:12px;border:1px solid #CCC;background:#fff;font-size:12px;color:#555;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;}
+.emp-edit-btn:hover{background:var(--teal);color:#fff;border-color:var(--teal);}
+.time-edit-inline{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.t-inp{width:76px;height:28px;border:1.5px solid #DDD;border-radius:7px;padding:0 5px;font-size:12px;font-family:inherit;font-variant-numeric:tabular-nums;text-align:center;}
+.t-inp:focus{outline:none;border-color:var(--teal);}
+.t-sep-dash{font-size:13px;color:#CCC;}
+.t-save{padding:4px 9px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.t-cancel{padding:4px 7px;border-radius:6px;border:1px solid #DDD;background:#fff;font-size:12px;color:#888;cursor:pointer;font-family:inherit;}
+.sub-item-group{border-bottom:1px solid #F0F0F0;}
+.sub-item-group:last-child{border-bottom:none;}
+.emp-sub-row{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 0 0 16px;gap:8px;}
+.emp-sub-label{font-size:14px;color:#333;font-weight:500;}
+.auto-sub-row{display:none;align-items:center;gap:8px;padding:6px 0 12px 16px;flex-wrap:wrap;}
+.auto-sub-row.visible{display:flex;}
+.auto-chk-sub{width:18px;height:18px;accent-color:var(--teal);cursor:pointer;flex-shrink:0;}
+.auto-sub-label{font-size:13px;color:#333;font-weight:500;cursor:pointer;user-select:none;}
+.auto-pills-wrap{display:flex;gap:6px;align-items:center;}
+.auto-date-inp{height:30px;width:108px;background:#555;color:#fff;border:none;border-radius:8px;padding:0 8px;font-size:12px;font-family:inherit;cursor:pointer;-webkit-appearance:none;}
+.auto-time-inp{height:30px;width:74px;background:#555;color:#fff;border:none;border-radius:8px;padding:0 8px;font-size:12px;font-family:inherit;cursor:pointer;-webkit-appearance:none;}
+.auto-date-inp::-webkit-calendar-picker-indicator,.auto-time-inp::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7;cursor:pointer;}
+.auto-date-inp:focus,.auto-time-inp:focus{outline:none;}
+.emp-maint-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;}
+.emp-gap{height:8px;background:#F2F2F2;}
+.emp-actions{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.emp-save-btn{width:100%;height:50px;border-radius:10px;border:none;background:var(--teal);color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:2px;}
+.emp-save-btn:hover{background:#2EA896;}
+.emp-exit-btn{width:100%;height:50px;border-radius:10px;border:none;background:#666;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:2px;}
+.sys-alert{background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:10px 12px;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.sys-alert-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.sys-alert-text{font-size:12px;color:#78350F;line-height:1.6;}
+.sys-alert-text strong{color:#B45309;}
+.hidden{display:none!important;}
+
+/* ════ PORTAL ════ */
+.portal-frame{width:960px;height:640px;background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.p-topbar{background:var(--navy);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex-shrink:0;}
+.p-logo{font-size:15px;font-weight:700;color:#fff;letter-spacing:1px;}
+.p-logo span{color:var(--brand);}
+.p-user{display:flex;align-items:center;gap:8px;font-size:11.5px;color:rgba(255,255,255,.55);}
+.p-avatar{width:28px;height:28px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;}
+.p-main-nav{background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;padding:0 22px;height:42px;flex-shrink:0;}
+.p-main-nav-item{height:42px;padding:0 14px;display:flex;align-items:center;font-size:12.5px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.p-main-nav-item:hover{color:var(--text);}
+.p-main-nav-item.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600;}
+.p-content{flex:1;overflow-y:auto;padding:16px 22px;background:var(--bg);display:flex;flex-direction:column;gap:13px;}
+.p-panel{display:none;flex-direction:column;gap:13px;}
+.p-panel.active{display:flex;}
+.p-header-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.p-title{font-size:16px;font-weight:700;color:var(--text);}
+.p-sub{font-size:11.5px;color:var(--text-2);margin-top:3px;}
+.p-card{background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;}
+.p-card-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.p-card-title{font-size:13px;font-weight:700;color:var(--text);}
+.p-card-sub{font-size:11px;color:var(--text-2);margin-top:2px;}
+.svc-open-row{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #F0F3F8;transition:background .15s;}
+.svc-open-row:last-child{border-bottom:none;}
+.svc-open-row:hover{background:#FAFBFD;}
+.sor-left{display:flex;align-items:center;gap:12px;}
+.sor-icon-wrap{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.sor-icon-dine{background:rgba(99,102,241,.1);}
+.sor-icon-take{background:rgba(232,71,46,.1);}
+.sor-name{font-size:13px;font-weight:700;color:var(--text);}
+.sor-desc{font-size:11px;color:var(--text-2);margin-top:2px;}
+.sor-impact{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--purple);background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15);border-radius:5px;padding:2px 7px;margin-top:5px;}
+.sor-right{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.sor-status{font-size:11.5px;font-weight:600;}
+.sor-status.open{color:var(--success);}
+.sor-status.closed{color:#94A3B8;}
+.p-tog{width:42px;height:23px;border-radius:12px;border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.p-tog.on{background:var(--success);}
+.p-tog.off{background:#CBD5E1;}
+.p-tog::after{content:'';position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;top:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.p-tog.on::after{left:22px;}
+.p-tog.off::after{left:3px;}
+.impact-note{display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;}
+.impact-note-text{font-size:11.5px;color:#92400E;line-height:1.5;}
+.p-table{width:100%;border-collapse:collapse;}
+.p-table th{padding:9px 14px;font-size:10px;font-weight:700;color:var(--text-2);text-align:left;background:#F8FAFC;border-bottom:1px solid var(--border);letter-spacing:.8px;text-transform:uppercase;}
+.p-table th.new-col{color:var(--brand);}
+.p-table td{padding:12px 14px;font-size:12.5px;color:var(--text);border-bottom:1px solid #F0F3F8;vertical-align:middle;}
+.p-table tr:last-child td{border-bottom:none;}
+.p-table tr:hover td{background:#FAFBFC;}
+.dev-name{font-weight:600;}
+.dev-type{font-size:10px;color:var(--text-2);background:#F0F3F8;border-radius:5px;padding:2px 6px;margin-left:5px;}
+.dev-id{font-size:11px;color:var(--text-2);}
+.toggle-cell{display:flex;align-items:center;gap:7px;}
+.tog{width:38px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--success);}
+.tog.off{background:#CBD5E1;}
+.tog::after{content:'';position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;top:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.tog.on::after{left:20px;}
+.tog.off::after{left:3px;}
+.tog-lbl{font-size:11.5px;color:var(--text-2);}
+.log-item{background:#F8FAFC;border-radius:8px;padding:11px 14px;border-left:3px solid var(--brand);}
+.log-item.amber{border-left-color:#F59E0B;}
+.log-text{font-size:11.5px;color:var(--text);line-height:1.6;font-family:'SF Mono',monospace;}
+.log-text .hl{color:var(--brand);font-weight:700;}
+.log-text .hl-a{color:#D97706;font-weight:700;}
+.log-meta{font-size:10px;color:var(--text-2);margin-top:5px;}
+.add-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#1B2A4A;color:#fff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:700;opacity:0;transition:all .3s;pointer-events:none;display:flex;align-items:center;gap:8px;max-width:520px;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <span class="nav-brand">Cashier <span>POS</span></span>
+  <span class="nav-tag">CNF-1335 Prototype</span>
+  <div class="nav-dot"></div>
+  <button class="scene-tab active" id="tab-k1" onclick="go('k1')">🖥️ Kiosk · 正常時段</button>
+  <button class="scene-tab" id="tab-k2" onclick="go('k2')">🥡 Kiosk · 外帶限定</button>
+  <button class="scene-tab" id="tab-s1" onclick="go('s1')">⚙️ 服務類型設定</button>
+  <button class="scene-tab" id="tab-p1" onclick="go('p1')">🌐 Portal 設定</button>
+</nav>
+
+<div class="stage">
+
+  <!-- Scene 1: Kiosk 正常時段 -->
+  <div class="screen active" id="sc-k1">
+    <div class="kiosk-device">
+      <div class="kiosk-status-bar"><span class="ksb-left">MD-Lite · KSK-001</span><div class="ksb-right"><span>📶</span><span>🔋</span></div></div>
+      <div class="kiosk-header">
+        <div class="kiosk-logo-area"><div class="kiosk-logo-circle">🥟</div><div><div class="kiosk-name">八方雲集</div><div class="kiosk-store">東科店</div></div></div>
+        <div class="kiosk-clock-box"><div class="kiosk-time" id="clk">12:30</div><div class="kiosk-date-str">2026-04-23 星期四</div></div>
+      </div>
+      <div class="kiosk-body">
+        <div><div class="kiosk-welcome-en">WELCOME · 歡迎光臨</div><div class="kiosk-welcome-zh">自助點餐</div></div>
+        <div class="kiosk-divider"></div>
+        <div class="kiosk-prompt">請選擇服務類型</div>
+        <div class="kiosk-btns">
+          <div class="kbtn" onclick="kbtnTap(this)"><div class="kbtn-badge">開放中</div><div class="kbtn-icon">🍽️</div><div class="kbtn-label">內　用</div></div>
+          <div class="kbtn" onclick="kbtnTap(this)"><div class="kbtn-badge">開放中</div><div class="kbtn-icon">🥡</div><div class="kbtn-label">外　帶</div></div>
+        </div>
+      </div>
+      <div class="kiosk-footer"><div class="kf-device">📍 MD-Lite · 設備 KSK-001</div><div class="kf-lang">中文 / EN</div></div>
+    </div>
+  </div>
+
+  <!-- Scene 2: Kiosk 外帶限定 -->
+  <div class="screen" id="sc-k2">
+    <div class="kiosk-device">
+      <div class="kiosk-status-bar"><span class="ksb-left">MD-Lite · KSK-001</span><div class="ksb-right"><span>📶</span><span>🔋</span></div></div>
+      <div class="kiosk-header">
+        <div class="kiosk-logo-area"><div class="kiosk-logo-circle">🥟</div><div><div class="kiosk-name">八方雲集</div><div class="kiosk-store">東科店</div></div></div>
+        <div class="kiosk-clock-box"><div class="kiosk-time">18:30</div><div class="kiosk-date-str">2026-04-23 星期四</div></div>
+      </div>
+      <div class="kiosk-body">
+        <div><div class="kiosk-welcome-en">WELCOME · 歡迎光臨</div><div class="kiosk-welcome-zh">自助點餐</div></div>
+        <div class="kiosk-divider"></div>
+        <div class="kiosk-prompt">請選擇服務類型</div>
+        <div class="kiosk-btns" style="justify-content:center;">
+          <div class="kbtn kbtn-wide" onclick="kbtnTap(this)"><div class="kbtn-badge">開放中</div><div class="kbtn-icon">🥡</div><div class="kbtn-label">外　帶</div></div>
+        </div>
+        <div class="kiosk-notice-box"><div class="kn-title">⏰ 內用時段已結束</div><div class="kn-text">目前時間 18:30 已超出內用開放時段<br>現僅提供外帶服務，感謝您的配合</div></div>
+      </div>
+      <div class="kiosk-footer"><div class="kf-device">📍 MD-Lite · 設備 KSK-001</div><div class="kf-lang">中文 / EN</div></div>
+    </div>
+  </div>
+
+  <!-- Scene 3: 服務類型設定（員工介面） -->
+  <div class="screen" id="sc-s1">
+    <div class="emp-device">
+      <div class="emp-topbar"><span class="emp-topbar-text">員工專區</span></div>
+      <div class="emp-title-bar"><span class="emp-title-text">服務類型設定</span></div>
+      <div class="emp-scroll">
+
+        <!-- 點餐機設定 -->
+        <div class="emp-section">
+          <div class="emp-section-header"><div class="emp-section-name">點餐機設定</div></div>
+          <div class="sys-alert hidden" id="sys-auto-close-alert">
+            <span class="sys-alert-icon">⚠️</span>
+            <div class="sys-alert-text"><strong>系統通知：</strong>服務類型顯示按鈕設定皆設為指定時間，系統已自動將點餐機狀態變更為<strong>「關閉」</strong>。</div>
+          </div>
+          <!-- 1. 點餐機狀態 -->
+          <div class="emp-row">
+            <span class="emp-row-label">點餐機狀態</span>
+            <div class="emp-tog-wrap"><button class="emp-tog on" id="dev-state" onclick="toggleDevState()"></button><span class="emp-tog-lbl on" id="dev-state-lbl">開啟</span></div>
+          </div>
+          <!-- 2. 機器模式 -->
+          <div class="emp-row" id="row-mode">
+            <span class="emp-row-label">機器模式</span>
+            <div class="mode-val-wrap" onclick="cycleMode()" title="點擊切換（Demo）">
+              <span class="mode-val-chip" id="mode-val-chip">全能</span>
+              <span class="readonly-badge">唯讀</span>
+            </div>
+          </div>
+          <!-- 3. 本機服務類型 -->
+          <div class="emp-row" id="row-local-svc" style="align-items:flex-start;padding:12px 0;">
+            <span class="emp-row-label" style="padding-top:4px;">本機服務類型</span>
+            <div class="chk-group">
+              <div class="chk-item active" id="chk-all" onclick="setLocalSvc('all')"><div class="chk-box">✓</div><span>全部</span></div>
+              <div class="chk-item" id="chk-dine" onclick="setLocalSvc('dine')"><div class="chk-box"></div><span>內用</span></div>
+              <div class="chk-item" id="chk-take" onclick="setLocalSvc('take')"><div class="chk-box"></div><span>外帶</span></div>
+            </div>
+          </div>
+          <!-- 4. 服務按鈕顯示設定 -->
+          <div id="row-btn-display" class="btn-display-section">
+            <div class="btn-display-title">服務按鈕顯示設定</div>
+            <div class="svc-time-row" id="svc-row-dine">
+              <span class="svc-time-label">內用</span>
+              <div class="mini-seg">
+                <button class="mini-seg-btn active" id="seg-dine-all" onclick="setTimeModeFor('dine','all')">全天顯示</button>
+                <button class="mini-seg-btn" id="seg-dine-timed" onclick="setTimeModeFor('dine','timed')">指定時間</button>
+              </div>
+              <div class="svc-time-val-wrap hidden" id="tview-dine"><span class="svc-time-val" id="tval-dine">09:00 〜 17:00</span><button class="emp-edit-btn" onclick="enterTimeEdit('dine')">編輯</button></div>
+              <div id="tedit-dine" style="display:none;"><div class="time-edit-inline"><input type="time" class="t-inp" id="ti-dine-s" value="09:00"><span class="t-sep-dash">〜</span><input type="time" class="t-inp" id="ti-dine-e" value="17:00"><button class="t-save" onclick="saveTime('dine')">確認</button><button class="t-cancel" onclick="cancelTimeEdit('dine')">✕</button></div></div>
+            </div>
+            <div class="svc-time-row" id="svc-row-take">
+              <span class="svc-time-label">外帶</span>
+              <div class="mini-seg">
+                <button class="mini-seg-btn active" id="seg-take-all" onclick="setTimeModeFor('take','all')">全天顯示</button>
+                <button class="mini-seg-btn" id="seg-take-timed" onclick="setTimeModeFor('take','timed')">指定時間</button>
+              </div>
+              <div class="svc-time-val-wrap hidden" id="tview-take"><span class="svc-time-val" id="tval-take">09:00 〜 14:00</span><button class="emp-edit-btn" onclick="enterTimeEdit('take')">編輯</button></div>
+              <div id="tedit-take" style="display:none;"><div class="time-edit-inline"><input type="time" class="t-inp" id="ti-take-s" value="09:00"><span class="t-sep-dash">〜</span><input type="time" class="t-inp" id="ti-take-e" value="14:00"><button class="t-save" onclick="saveTime('take')">確認</button><button class="t-cancel" onclick="cancelTimeEdit('take')">✕</button></div></div>
+            </div>
+          </div>
+          <!-- 5. 維護模式 -->
+          <div class="emp-maint-row">
+            <span class="emp-row-label">維護模式</span>
+            <div class="emp-tog-wrap"><button class="emp-tog off" id="maint-tog" onclick="toggleMaint()"></button><span class="emp-tog-lbl off" id="maint-lbl">關閉</span></div>
+          </div>
+        </div>
+
+        <div class="emp-gap"></div>
+
+        <!-- 網頁點餐設定 -->
+        <div class="emp-section">
+          <div class="emp-section-header">
+            <div class="emp-section-name">網頁點餐設定</div>
+            <div class="emp-tog-wrap"><button class="emp-tog on" id="web-master-tog" onclick="toggleMaster('web')"></button><span class="emp-tog-lbl on" id="web-master-lbl">開啟</span></div>
+          </div>
+          <div id="web-items">
+            <div class="sub-item-group">
+              <div class="emp-sub-row"><span class="emp-sub-label">內用</span><div class="emp-tog-wrap"><button class="emp-tog on" id="sub-web-0-tog" onclick="toggleSubItem('web',0)"></button><span class="emp-tog-lbl on" id="sub-web-0-lbl">開啟</span></div></div>
+              <div class="auto-sub-row" id="auto-web-0"><input type="checkbox" class="auto-chk-sub" id="auto-chk-web-0" onchange="toggleSubDT('web',0)"><label class="auto-sub-label" for="auto-chk-web-0">自動開啟</label><div class="auto-pills-wrap hidden" id="auto-pills-web-0"><input type="date" class="auto-date-inp" value="2026-04-25"><input type="time" class="auto-time-inp" value="09:00"></div></div>
+            </div>
+            <div class="sub-item-group">
+              <div class="emp-sub-row"><span class="emp-sub-label">外帶</span><div class="emp-tog-wrap"><button class="emp-tog on" id="sub-web-1-tog" onclick="toggleSubItem('web',1)"></button><span class="emp-tog-lbl on" id="sub-web-1-lbl">開啟</span></div></div>
+              <div class="auto-sub-row" id="auto-web-1"><input type="checkbox" class="auto-chk-sub" id="auto-chk-web-1" onchange="toggleSubDT('web',1)"><label class="auto-sub-label" for="auto-chk-web-1">自動開啟</label><div class="auto-pills-wrap hidden" id="auto-pills-web-1"><input type="date" class="auto-date-inp" value="2026-04-25"><input type="time" class="auto-time-inp" value="09:00"></div></div>
+            </div>
+            <div class="sub-item-group">
+              <div class="emp-sub-row"><span class="emp-sub-label">外送</span><div class="emp-tog-wrap"><button class="emp-tog on" id="sub-web-2-tog" onclick="toggleSubItem('web',2)"></button><span class="emp-tog-lbl on" id="sub-web-2-lbl">開啟</span></div></div>
+              <div class="auto-sub-row" id="auto-web-2"><input type="checkbox" class="auto-chk-sub" id="auto-chk-web-2" onchange="toggleSubDT('web',2)"><label class="auto-sub-label" for="auto-chk-web-2">自動開啟</label><div class="auto-pills-wrap hidden" id="auto-pills-web-2"><input type="date" class="auto-date-inp" value="2026-04-25"><input type="time" class="auto-time-inp" value="09:00"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="emp-gap"></div>
+
+        <!-- 團體點餐 -->
+        <div class="emp-section">
+          <div class="emp-section-header">
+            <div class="emp-section-name">團體點餐</div>
+            <div class="emp-tog-wrap"><button class="emp-tog on" id="group-master-tog" onclick="toggleMaster('group')"></button><span class="emp-tog-lbl on" id="group-master-lbl">開啟</span></div>
+          </div>
+          <div id="group-items">
+            <div class="sub-item-group">
+              <div class="emp-sub-row"><span class="emp-sub-label">外帶</span><div class="emp-tog-wrap"><button class="emp-tog on" id="sub-group-0-tog" onclick="toggleSubItem('group',0)"></button><span class="emp-tog-lbl on" id="sub-group-0-lbl">開啟</span></div></div>
+              <div class="auto-sub-row" id="auto-group-0"><input type="checkbox" class="auto-chk-sub" id="auto-chk-group-0" onchange="toggleSubDT('group',0)"><label class="auto-sub-label" for="auto-chk-group-0">自動開啟</label><div class="auto-pills-wrap hidden" id="auto-pills-group-0"><input type="date" class="auto-date-inp" value="2026-04-25"><input type="time" class="auto-time-inp" value="09:00"></div></div>
+            </div>
+            <div class="sub-item-group">
+              <div class="emp-sub-row"><span class="emp-sub-label">外送</span><div class="emp-tog-wrap"><button class="emp-tog on" id="sub-group-1-tog" onclick="toggleSubItem('group',1)"></button><span class="emp-tog-lbl on" id="sub-group-1-lbl">開啟</span></div></div>
+              <div class="auto-sub-row" id="auto-group-1"><input type="checkbox" class="auto-chk-sub" id="auto-chk-group-1" onchange="toggleSubDT('group',1)"><label class="auto-sub-label" for="auto-chk-group-1">自動開啟</label><div class="auto-pills-wrap hidden" id="auto-pills-group-1"><input type="date" class="auto-date-inp" value="2026-04-25"><input type="time" class="auto-time-inp" value="09:00"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="emp-gap"></div>
+        <div class="emp-actions">
+          <button class="emp-save-btn" onclick="empSave()">儲存</button>
+          <button class="emp-exit-btn">退出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4: Portal 設定 -->
+  <div class="screen" id="sc-p1">
+    <div class="portal-frame">
+      <div class="p-topbar"><div class="p-logo">Cashier <span>Portal</span></div><div class="p-user"><div class="p-avatar">A</div><span>Amber Yang</span></div></div>
+      <div class="p-main-nav">
+        <div class="p-main-nav-item" onclick="pTab('account',this)">帳號管理</div>
+        <div class="p-main-nav-item active" onclick="pTab('store',this)">店家設定</div>
+        <div class="p-main-nav-item" onclick="pTab('device',this)">設備權限</div>
+        <div class="p-main-nav-item" onclick="pTab('event',this)">事件查詢</div>
+        <div class="p-main-nav-item" onclick="pTab('report',this)">報表</div>
+      </div>
+      <div class="p-content">
+        <div class="p-panel active" id="panel-store">
+          <div class="p-header-row"><div><div class="p-title">店家設定</div><div class="p-sub">八方雲集 東科店</div></div></div>
+          <div class="p-card">
+            <div class="p-card-head"><div><div class="p-card-title">服務類型開放設定</div><div class="p-card-sub">決定店家提供哪些服務類型，影響全店所有 Kiosk / POS 設備</div></div><span style="font-size:10px;color:var(--purple);background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.18);border-radius:5px;padding:3px 9px;font-weight:700;">全店套用</span></div>
+            <div class="svc-open-row"><div class="sor-left"><div class="sor-icon-wrap sor-icon-dine">🍽️</div><div><div class="sor-name">內用</div><div class="sor-desc">提供顧客於店內用餐的服務</div><div class="sor-impact">🔗 連動 Kiosk 本機服務類型設定</div></div></div><div class="sor-right"><span class="sor-status open" id="p-sor-status-dine">已開放</span><button class="p-tog on" id="p-tog-dine" onclick="portalToggleSvc('dine')"></button></div></div>
+            <div class="svc-open-row"><div class="sor-left"><div class="sor-icon-wrap sor-icon-take">🥡</div><div><div class="sor-name">外帶</div><div class="sor-desc">提供顧客外帶餐點的服務</div><div class="sor-impact">🔗 連動 Kiosk 本機服務類型設定</div></div></div><div class="sor-right"><span class="sor-status open" id="p-sor-status-take">已開放</span><button class="p-tog on" id="p-tog-take" onclick="portalToggleSvc('take')"></button></div></div>
+          </div>
+          <div class="impact-note"><span style="font-size:16px;flex-shrink:0;">⚡</span><div class="impact-note-text"><strong>關閉服務類型後，</strong>所有 Kiosk 設備將立即隱藏對應按鈕，操作將發送通知給相關人員。</div></div>
+          <div class="p-card">
+            <div class="p-card-head"><div class="p-card-title">📋 近期事件紀錄</div></div>
+            <div style="padding:13px 18px;display:flex;flex-direction:column;gap:9px;">
+              <div class="log-item"><div class="log-text">[電小二(東科店) @2026/04/23 09:12:05] — <span class="hl">內用服務類型開放</span> 操作人員：Amber.</div><div class="log-meta">2026/04/23 09:12:05 · Portal · Amber Yang</div></div>
+              <div class="log-item amber"><div class="log-text">[電小二(東科店) MD-Lite @2026/04/21 16:18:21] — <span class="hl-a">內用時段變更</span><br>[從 09:00 ~ 18:00 變更時間為: 09:00 ~ 17:00] 操作人員：Amber.</div><div class="log-meta">2026/04/21 16:18:21 · MD-Lite · Amber Yang</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="p-panel" id="panel-device">
+          <div class="p-header-row"><div><div class="p-title">設備權限管理</div><div class="p-sub">管理各設備的功能操作權限</div></div><button class="add-btn">＋ 新增設備</button></div>
+          <div class="p-card">
+            <div class="p-card-head"><div><div class="p-card-title">八方雲集 東科店 · 設備清單</div><div class="p-card-sub">3 台設備</div></div></div>
+            <table class="p-table">
+              <thead><tr><th>設備名稱</th><th>設備 ID</th><th>營業時間設定</th><th class="new-col">服務類型時段設定</th><th>付款方式設定</th></tr></thead>
+              <tbody>
+                <tr><td><span class="dev-name">MD-Lite</span><span class="dev-type">Kiosk</span></td><td class="dev-id">KSK-001</td><td><div class="toggle-cell"><button class="tog on" onclick="togSwitch(this)"></button><span class="tog-lbl">已開啟</span></div></td><td><div class="toggle-cell"><button class="tog on" onclick="togSwitch(this)"></button><span class="tog-lbl">已開啟</span></div></td><td><div class="toggle-cell"><button class="tog on" onclick="togSwitch(this)"></button><span class="tog-lbl">已開啟</span></div></td></tr>
+                <tr><td><span class="dev-name">POS Station 1</span><span class="dev-type">POS</span></td><td class="dev-id">POS-001</td><td><div class="toggle-cell"><button class="tog on" onclick="togSwitch(this)"></button><span class="tog-lbl">已開啟</span></div></td><td><div class="toggle-cell"><button class="tog off" onclick="togSwitch(this)"></button><span class="tog-lbl">已關閉</span></div></td><td><div class="toggle-cell"><button class="tog on" onclick="togSwitch(this)"></button><span class="tog-lbl">已開啟</span></div></td></tr>
+                <tr><td><span class="dev-name">收銀台 2</span><span class="dev-type">POS</span></td><td class="dev-id">POS-002</td><td><div class="toggle-cell"><button class="tog off" onclick="togSwitch(this)"></button><span class="tog-lbl">已關閉</span></div></td><td><div class="toggle-cell"><button class="tog off" onclick="togSwitch(this)"></button><span class="tog-lbl">已關閉</span></div></td><td><div class="toggle-cell"><button class="tog on" onclick="togSwitch(this)"></button><span class="tog-lbl">已開啟</span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="p-panel" id="panel-account"><div style="padding:40px;text-align:center;color:var(--text-2);font-size:13px;">帳號管理功能</div></div>
+        <div class="p-panel" id="panel-event"><div style="padding:40px;text-align:center;color:var(--text-2);font-size:13px;">事件查詢功能</div></div>
+        <div class="p-panel" id="panel-report"><div style="padding:40px;text-align:center;color:var(--text-2);font-size:13px;">報表功能</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">設定已儲存</span></div>
+
+<script>
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.scene-tab').forEach(b=>b.classList.remove('active'));document.getElementById('sc-'+id).classList.add('active');document.getElementById('tab-'+id).classList.add('active');}
+function pTab(name,el){document.querySelectorAll('.p-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.p-main-nav-item').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+name).classList.add('active');el.classList.add('active');}
+(function tick(){const n=new Date(),el=document.getElementById('clk');if(el)el.textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');setTimeout(tick,20000);})();
+function kbtnTap(el){el.classList.add('selected');setTimeout(()=>el.classList.remove('selected'),700);}
+function togSwitch(el){const wrap=el.closest('.toggle-cell');const lbl=wrap.querySelector('.tog-lbl');const isOn=el.classList.contains('on');el.classList.toggle('on',!isOn);el.classList.toggle('off',isOn);lbl.textContent=isOn?'已關閉':'已開啟';}
+
+const empState={devOn:true,modeIdx:2,localSvc:'all',timeModes:{dine:'all',take:'all'},times:{dine:{s:'09:00',e:'17:00'},take:{s:'09:00',e:'14:00'}}};
+const MODES=['點餐','付款','全能'];
+const subItems={web:[{on:true},{on:true},{on:true}],group:[{on:true},{on:true}]};
+
+function setShow(id,show){const el=document.getElementById(id);if(!el)return;if(show)el.classList.remove('hidden');else el.classList.add('hidden');}
+function applyVisibility(){const on=empState.devOn;const isPay=empState.modeIdx===1;setShow('row-mode',on);setShow('row-local-svc',on&&!isPay);setShow('row-btn-display',on&&!isPay);if(on&&!isPay)applySvcRowVisibility();}
+function applySvcRowVisibility(){const t=empState.localSvc;setShow('svc-row-dine',t==='all'||t==='dine');setShow('svc-row-take',t==='all'||t==='take');}
+
+function checkAutoClose(){const t=empState.localSvc;const dV=t==='all'||t==='dine';const tkV=t==='all'||t==='take';const allTimed=(!dV||empState.timeModes.dine==='timed')&&(!tkV||empState.timeModes.take==='timed')&&(dV||tkV);const alertEl=document.getElementById('sys-auto-close-alert');if(allTimed&&empState.devOn){empState.devOn=false;const tog=document.getElementById('dev-state');const lbl=document.getElementById('dev-state-lbl');tog.classList.remove('on');tog.classList.add('off');lbl.textContent='關閉';lbl.className='emp-tog-lbl off';alertEl.classList.remove('hidden');applyVisibility();showToast('⚠️ 系統自動將點餐機狀態變更為「關閉」','#F59E0B');}else{alertEl.classList.add('hidden');}}
+
+function toggleDevState(){empState.devOn=!empState.devOn;const tog=document.getElementById('dev-state');const lbl=document.getElementById('dev-state-lbl');tog.classList.toggle('on',empState.devOn);tog.classList.toggle('off',!empState.devOn);lbl.textContent=empState.devOn?'開啟':'關閉';lbl.className='emp-tog-lbl '+(empState.devOn?'on':'off');if(empState.devOn)document.getElementById('sys-auto-close-alert').classList.add('hidden');applyVisibility();showToast('點餐機狀態：'+(empState.devOn?'開啟':'關閉'),empState.devOn?'#3CBCA8':'#F59E0B');}
+function cycleMode(){empState.modeIdx=(empState.modeIdx+1)%3;document.getElementById('mode-val-chip').textContent=MODES[empState.modeIdx];applyVisibility();showToast('機器模式：'+MODES[empState.modeIdx],'#6366F1');}
+function setLocalSvc(t){empState.localSvc=t;['all','dine','take'].forEach(k=>{const el=document.getElementById('chk-'+k);el.classList.toggle('active',k===t);el.querySelector('.chk-box').textContent=k===t?'✓':'';});applySvcRowVisibility();const labels={all:'全部',dine:'內用',take:'外帶'};showToast('本機服務類型：'+labels[t],'#3CBCA8');checkAutoClose();}
+function setTimeModeFor(type,mode){empState.timeModes[type]=mode;const isTimed=mode==='timed';document.getElementById('seg-'+type+'-all').classList.toggle('active',!isTimed);document.getElementById('seg-'+type+'-timed').classList.toggle('active',isTimed);const tview=document.getElementById('tview-'+type);const tedit=document.getElementById('tedit-'+type);if(isTimed){tview.classList.remove('hidden');tedit.style.display='none';}else{tview.classList.add('hidden');tedit.style.display='none';}checkAutoClose();}
+function enterTimeEdit(type){document.getElementById('tview-'+type).classList.add('hidden');document.getElementById('tedit-'+type).style.display='block';document.getElementById('ti-'+type+'-s').value=empState.times[type].s;document.getElementById('ti-'+type+'-e').value=empState.times[type].e;}
+function cancelTimeEdit(type){document.getElementById('tview-'+type).classList.remove('hidden');document.getElementById('tedit-'+type).style.display='none';}
+function saveTime(type){const s=document.getElementById('ti-'+type+'-s').value;const e=document.getElementById('ti-'+type+'-e').value;empState.times[type]={s,e};document.getElementById('tval-'+type).textContent=s+' 〜 '+e;cancelTimeEdit(type);showToast((type==='dine'?'內用':'外帶')+' 顯示時間：'+s+' 〜 '+e,'#3CBCA8');}
+function toggleMaint(){const tog=document.getElementById('maint-tog');const lbl=document.getElementById('maint-lbl');const isOn=tog.classList.contains('on');tog.classList.toggle('on',!isOn);tog.classList.toggle('off',isOn);lbl.textContent=isOn?'關閉':'開啟';lbl.className='emp-tog-lbl '+(isOn?'off':'on');showToast('維護模式：'+(isOn?'關閉':'開啟'),isOn?'#3CBCA8':'#F59E0B');}
+
+function toggleMaster(section){const tog=document.getElementById(section+'-master-tog');const lbl=document.getElementById(section+'-master-lbl');const isOn=tog.classList.contains('on');tog.classList.toggle('on',!isOn);tog.classList.toggle('off',isOn);lbl.textContent=isOn?'關閉':'開啟';lbl.className='emp-tog-lbl '+(isOn?'off':'on');const count=subItems[section].length;for(let i=0;i<count;i++){setSubItemState(section,i,!isOn);}}
+function toggleSubItem(section,idx){setSubItemState(section,idx,!subItems[section][idx].on);}
+function setSubItemState(section,idx,on){subItems[section][idx].on=on;const tog=document.getElementById('sub-'+section+'-'+idx+'-tog');const lbl=document.getElementById('sub-'+section+'-'+idx+'-lbl');const autoRow=document.getElementById('auto-'+section+'-'+idx);tog.classList.toggle('on',on);tog.classList.toggle('off',!on);lbl.textContent=on?'開啟':'關閉';lbl.className='emp-tog-lbl '+(on?'on':'off');if(!on){autoRow.classList.add('visible');const chk=document.getElementById('auto-chk-'+section+'-'+idx);chk.checked=true;document.getElementById('auto-pills-'+section+'-'+idx).classList.remove('hidden');}else{autoRow.classList.remove('visible');const chk=document.getElementById('auto-chk-'+section+'-'+idx);chk.checked=false;document.getElementById('auto-pills-'+section+'-'+idx).classList.add('hidden');}}
+function toggleSubDT(section,idx){const chk=document.getElementById('auto-chk-'+section+'-'+idx);const pills=document.getElementById('auto-pills-'+section+'-'+idx);if(chk.checked)pills.classList.remove('hidden');else pills.classList.add('hidden');}
+
+function empSave(){showToast('✓ 設定已儲存','#3CBCA8');}
+function portalToggleSvc(type){const tog=document.getElementById('p-tog-'+type);const statusEl=document.getElementById('p-sor-status-'+type);const isOn=tog.classList.contains('on');tog.classList.toggle('on',!isOn);tog.classList.toggle('off',isOn);statusEl.textContent=isOn?'已關閉':'已開放';statusEl.className='sor-status '+(isOn?'closed':'open');const label=type==='dine'?'內用':'外帶';showToast(isOn?label+' 服務已關閉':label+' 服務已開放',isOn?'#F59E0B':'#12B76A');}
+
+function showToast(msg,dotColor){document.getElementById('toast-msg').textContent=msg;document.querySelector('.toast-dot').style.background=dotColor||'#3CBCA8';const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+applyVisibility();
+</script>
+</body>
+</html>
