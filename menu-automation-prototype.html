@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>菜單自動化處理系統</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    background: #f5f5f5;
+    color: #222;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .app { max-width: 1100px; margin: 0 auto; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 1.5px solid #d0d0d0;
+    background: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    color: #555;
+    transition: all 0.15s;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .tab-btn:hover { border-color: #4caf50; color: #2e7d32; }
+  .tab-btn.active {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: #fff;
+  }
+
+  /* Two-column */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Left panel */
+  .store-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .store-dot { width: 9px; height: 9px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .store-name { font-weight: 700; font-size: 15px; }
+  .order-meta { font-size: 12px; color: #888; margin-bottom: 14px; display: flex; gap: 10px; }
+  .divider { border: none; border-top: 1px solid #ebebeb; margin: 14px 0; }
+  .section-label { font-size: 12px; color: #888; margin-bottom: 8px; font-weight: 500; }
+  .message-bubble {
+    background: #fffde7;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #333;
+  }
+  .status-text { font-size: 13px; color: #555; }
+  .status-row { display: flex; align-items: center; gap: 6px; }
+  .status-dot-pending { width: 8px; height: 8px; border-radius: 50%; background: #ffa726; flex-shrink: 0; }
+  .status-dot-done { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .status-dot-error { width: 8px; height: 8px; border-radius: 50%; background: #ef5350; flex-shrink: 0; }
+
+  /* Right panel - flow */
+  .flow-title { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .step { margin-bottom: 18px; }
+  .step-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #4caf50; color: #fff;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-num.error { background: #ef5350; }
+  .step-num.pending { background: #bdbdbd; }
+  .step-rows { display: flex; flex-direction: column; gap: 6px; }
+  .step-row {
+    background: #e8f5e9;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .step-row.visible { opacity: 1; transform: translateY(0); }
+  .step-row.error-row { background: #ffebee; }
+  .step-row.warning-row { background: #fff8e1; }
+  .step-row code { font-family: "SF Mono", "Fira Mono", monospace; font-size: 12px; }
+  .badge {
+    font-size: 11px;
+    background: #c8e6c9;
+    color: #2e7d32;
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .badge.error { background: #ffcdd2; color: #c62828; }
+  .badge.warning { background: #fff9c4; color: #f57f17; }
+  .badge.manual { background: #e3f2fd; color: #1565c0; }
+
+  /* File attachment */
+  .file-attachment {
+    display: flex; align-items: center; gap: 10px;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .file-icon {
+    width: 32px; height: 38px;
+    background: #fff;
+    border: 1.5px solid #c8e6c9;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    color: #2e7d32;
+    letter-spacing: 0;
+  }
+  .file-info { display: flex; flex-direction: column; gap: 2px; }
+  .file-name { font-weight: 600; color: #222; font-size: 13px; }
+  .file-meta { color: #888; font-size: 11px; }
+
+  /* Manual badge step number */
+  .step-num.manual { background: #1976d2; }
+  .step-num.warn { background: #f57c00; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid #c8e6c9;
+    border-top-color: #4caf50;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Bottom reply */
+  .reply-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  .reply-section.visible { opacity: 1; transform: translateY(0); }
+  .reply-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .reply-title { font-weight: 600; font-size: 14px; }
+  .reply-body { font-size: 14px; line-height: 1.8; color: #333; }
+  .reply-body p { margin-bottom: 6px; }
+
+  /* Footer buttons */
+  .footer { display: flex; gap: 12px; justify-content: flex-end; }
+  .btn {
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #2e7d32; color: #fff; }
+  .btn-primary:hover { background: #1b5e20; }
+  .btn-primary:disabled { background: #a5d6a7; cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: #555; border: 1.5px solid #d0d0d0; }
+  .btn-secondary:hover { border-color: #999; color: #222; }
+
+  /* Processing status in footer area */
+  .processing-label { font-size: 13px; color: #888; display: flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ---- Scenario data ----
+const scenarios = [
+  {
+    tab: "品項改名 + 改價",
+    store: "幸福早餐 #A001",
+    order: "#ZD-20260518-4821",
+    type: "菜單修改",
+    message: "你好，請幫我把「珍珠奶茶」改名為「珍珠鮮奶茶」，金額也請改成 75 元，謝謝",
+    statusColor: "done",
+    statusText: "回覆已發送，等待客戶確認",
+    steps: [
+      {
+        title: "關鍵字判別",
+        rows: [
+          { text: "品項改名：珍珠奶茶 → 珍珠鮮奶茶", badge: "Phase 1 · 自動" },
+          { text: "品項改價：$65 → $75", badge: "Phase 1 · 自動" },
+        ],
+      },
+      {
+        title: "API 執行",
+        rows: [
+          { code: "PATCH /menu/items/珍珠奶茶/name → 珍珠鮮奶茶" },
+          { code: "PATCH /menu/items/珍珠鮮奶茶/price → 75" },
+        ],
+      },
+      {
+        title: "回覆發送",
+        rows: [
+          { text: "模板 A　　全部完成　已發送至工單", badge: "完成" },
+        ],
+      },
+    ],
+    reply: {
+      badge: "模板 A　全部完成",
+      content: [
+        "目前已將上述修改內容完成，以下為本次修改項目：",
+        "・品項改名：珍珠奶茶 → 珍珠鮮奶茶",
+        "・品項改價：$65 → $75",
+        "",
+        "請登入設備維護模式並點擊更新菜單，再確認菜單品項已更新。",
+      ],
+    },
+  },
+  {
+    tab: "改價 + 新增 + 外送",
+    store: "晴天咖啡 #B032",
+    order: "#ZD-20260519-3307",
+    type: "菜單修改",
+    message: "請把「美式咖啡」調整為 90 元，另外新增「燕麥拿鐵」$120，並開啟外送服務，謝謝",
+    statusColor: "done",
+    statusText: "回覆已發送，等待客戶確認",
+    steps: [
+      {
+        title: "關鍵字判別",
+        rows: [
+          { text: "品項改價：美式咖啡 $80 → $90", badge: "Phase 1 · 自動" },
+          { text: "新增品項：燕麥拿鐵 $120", badge: "Phase 1 · 自動" },
+          { text: "開啟外送服務", badge: "Phase 1 · 自動" },
+        ],
+      },
+      {
+        title: "API 執行",
+        rows: [
+          { code: "PATCH /menu/items/美式咖啡/price → 90" },
+          { code: "POST /menu/items { name: 燕麥拿鐵, price: 120 }" },
+          { code: "PATCH /store/settings/delivery → enabled" },
+        ],
+      },
+      {
+        title: "回覆發送",
+        rows: [
+          { text: "模板 A　　全部完成　已發送至工單", badge: "完成" },
+        ],
+      },
+    ],
+    reply: {
+      badge: "模板 A　全部完成",
+      content: [
+        "目前已將上述修改內容完成，以下為本次修改項目：",
+        "・品項改價：美式咖啡 $80 → $90",
+        "・新增品項：燕麥拿鐵 $120",
+        "・外送服務：已開啟",
+        "",
+        "請登入設備維護模式並點擊更新菜單，再確認菜單品項已更新。",
+      ],
+    },
+  },
+  {
+    tab: "整份新菜單",
+    store: "好食堂 #C017",
+    order: "#ZD-20260519-7781",
+    type: "菜單更新",
+    message: "你好，附上我們最新版的菜單，麻煩全部替換掉舊菜單，謝謝！",
+    file: { name: "new_menu_2026.xlsx", size: "38 KB", ext: "XLS" },
+    statusColor: "pending",
+    statusText: "轉人工作業，待人員處理",
+    steps: [
+      {
+        title: "關鍵字判別",
+        rows: [
+          { text: "整份菜單上傳，偵測到附件", badge: "Phase 2 · 需人工" },
+        ],
+      },
+      {
+        title: "檔案解析",
+        rows: [
+          { code: "new_menu_2026.xlsx  →  解析成功（41 列）" },
+          { text: "偵測欄位：品項名稱 / 售價 / 分類 / 圖片連結", badge: "解析完成" },
+        ],
+      },
+      {
+        title: "自動化評估",
+        stepType: "warn",
+        rows: [
+          { text: "缺少必要欄位「品項 ID」，無法自動對應", badge: "評估失敗", badgeType: "warning", rowType: "warning" },
+          { text: "包含圖片連結欄位，需人工審核後上傳", badge: "需審核", badgeType: "warning", rowType: "warning" },
+          { text: "判定結果：無法自動執行，轉人工作業", badge: "轉人工", badgeType: "error", rowType: "error" },
+        ],
+      },
+      {
+        title: "轉人工作業",
+        stepType: "manual",
+        rows: [
+          { text: "已建立人工任務　#MAN-20260519-0042", badge: "已建立", badgeType: "manual" },
+          { text: "指派客服：林小芳　預計 2 小時內完成", badge: "已指派", badgeType: "manual" },
+        ],
+      },
+      {
+        title: "回覆發送",
+        rows: [
+          { text: "模板 D　　轉人工通知　已發送至工單", badge: "通知已發送" },
+        ],
+      },
+    ],
+    reply: {
+      badge: "模板 D　轉人工處理",
+      badgeType: "manual",
+      content: [
+        "您好，已收到您上傳的菜單檔案（new_menu_2026.xlsx）。",
+        "",
+        "系統偵測到以下情況，需由人工進行確認與處理：",
+        "・缺少品項 ID 欄位，無法自動比對現有菜單",
+        "・菜單含圖片連結，需人工審核後上傳",
+        "",
+        "您的需求已轉交給專屬客服人員（任務編號：#MAN-20260519-0042），預計 2 小時內完成處理。",
+        "感謝您的耐心等候，如有急迫需求請來電告知。",
+      ],
+    },
+  },
+  {
+    tab: "圖片格式錯誤",
+    store: "美味小館 #D009",
+    order: "#ZD-20260519-2254",
+    type: "菜單修改",
+    message: "我想更新「招牌牛肉麵」的圖片（附件：beef_noodle_photo.bmp）",
+    statusColor: "error",
+    statusText: "處理失敗，需人工介入",
+    steps: [
+      {
+        title: "關鍵字判別",
+        rows: [
+          { text: "圖片更新：招牌牛肉麵", badge: "Phase 1 · 自動" },
+        ],
+      },
+      {
+        title: "格式驗證",
+        rows: [
+          { code: "beef_noodle_photo.bmp", badge: "格式錯誤", badgeType: "error", rowType: "error" },
+          { text: "支援格式：JPG / PNG / WEBP（最大 5MB）", badge: "驗證失敗", badgeType: "error", rowType: "warning" },
+        ],
+      },
+      {
+        title: "回覆發送",
+        rows: [
+          { text: "模板 C　　格式錯誤　已發送至工單", badge: "錯誤通知", badgeType: "warning" },
+        ],
+      },
+    ],
+    reply: {
+      badge: "模板 C　格式錯誤",
+      badgeType: "error",
+      content: [
+        "您好，您所提供的圖片格式（.bmp）目前系統不支援。",
+        "",
+        "請使用以下格式重新上傳圖片：",
+        "・支援格式：JPG / PNG / WEBP",
+        "・檔案大小：最大 5MB",
+        "",
+        "請重新提供符合格式的圖片，我們將盡快協助您更新。",
+      ],
+    },
+  },
+];
+
+// ---- Step Row Component ----
+function StepRow({ row, visible }) {
+  const cls = [
+    "step-row",
+    visible ? "visible" : "",
+    row.rowType === "error" ? "error-row" : "",
+    row.rowType === "warning" ? "warning-row" : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className={cls}>
+      <span style={{ flex: 1 }}>
+        {row.code ? <code>{row.code}</code> : row.text}
+      </span>
+      {row.badge && (
+        <span className={`badge${row.badgeType === "error" ? " error" : row.badgeType === "warning" ? " warning" : row.badgeType === "manual" ? " manual" : ""}`}>
+          {row.badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---- Main App ----
+function App() {
+  const [activeTab, setActiveTab] = useState(0);
+  const [phase, setPhase] = useState("idle"); // idle | running | done
+  const [visibleSteps, setVisibleSteps] = useState([]); // array of {stepIdx, rowIdx}
+  const [currentLabel, setCurrentLabel] = useState("");
+  const timerRef = useRef([]);
+
+  const scenario = scenarios[activeTab];
+
+  function clearTimers() {
+    timerRef.current.forEach(clearTimeout);
+    timerRef.current = [];
+  }
+
+  function reset() {
+    clearTimers();
+    setPhase("idle");
+    setVisibleSteps([]);
+    setCurrentLabel("");
+  }
+
+  function switchTab(idx) {
+    reset();
+    setActiveTab(idx);
+  }
+
+  function runSimulation() {
+    if (phase === "running") return;
+    reset();
+    setPhase("running");
+
+    const delays = [];
+    let t = 300;
+
+    // Flatten all rows with step/row index
+    const allRows = [];
+    scenario.steps.forEach((step, si) => {
+      step.rows.forEach((row, ri) => {
+        allRows.push({ si, ri });
+      });
+    });
+
+    allRows.forEach(({ si, ri }) => {
+      delays.push({ t, si, ri });
+      t += 420;
+    });
+
+    // Schedule each row
+    delays.forEach(({ t: delay, si, ri }) => {
+      const id = setTimeout(() => {
+        setVisibleSteps(prev => [...prev, `${si}-${ri}`]);
+        setCurrentLabel(scenario.steps[si].title);
+      }, delay);
+      timerRef.current.push(id);
+    });
+
+    // Done
+    const doneId = setTimeout(() => {
+      setPhase("done");
+      setCurrentLabel("");
+    }, t + 200);
+    timerRef.current.push(doneId);
+  }
+
+  const isRowVisible = (si, ri) => visibleSteps.includes(`${si}-${ri}`);
+  const isRunning = phase === "running";
+  const isDone = phase === "done";
+
+  const statusDotClass = {
+    done: "status-dot-done",
+    error: "status-dot-error",
+    pending: "status-dot-pending",
+  }[scenario.statusColor] || "status-dot-pending";
+
+  return (
+    <div className="app">
+      {/* Tabs */}
+      <div className="tabs">
+        {scenarios.map((s, i) => (
+          <button
+            key={i}
+            className={`tab-btn${activeTab === i ? " active" : ""}`}
+            onClick={() => switchTab(i)}
+          >
+            {s.tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Main grid */}
+      <div className="main-grid">
+        {/* Left: Work order */}
+        <div className="card">
+          <div className="store-header">
+            <div className="store-dot" />
+            <span className="store-name">{scenario.store}</span>
+          </div>
+          <div className="order-meta">
+            <span>工單 {scenario.order}</span>
+            <span>{scenario.type}</span>
+          </div>
+          <hr className="divider" />
+          <div className="section-label">店家留言</div>
+          <div className="message-bubble">{scenario.message}</div>
+          {scenario.file && (
+            <div className="file-attachment">
+              <div className="file-icon">{scenario.file.ext}</div>
+              <div className="file-info">
+                <span className="file-name">{scenario.file.name}</span>
+                <span className="file-meta">附件 · {scenario.file.size}</span>
+              </div>
+            </div>
+          )}
+          <hr className="divider" />
+          <div className="section-label">自動化處理狀態</div>
+          <div className="status-row">
+            <div className={statusDotClass} />
+            <span className="status-text">{scenario.statusText}</span>
+          </div>
+        </div>
+
+        {/* Right: Processing flow */}
+        <div className="card">
+          <div className="flow-title">系統自動化處理流程</div>
+          {scenario.steps.map((step, si) => {
+            const isError = !step.stepType && step.rows.some(r => r.rowType === "error");
+            const numCls = step.stepType === "manual" ? " manual" : step.stepType === "warn" ? " warn" : isError ? " error" : "";
+            return (
+              <div className="step" key={si}>
+                <div className="step-header">
+                  <div className={`step-num${numCls}`}>{si + 1}</div>
+                  <span>{step.title}</span>
+                  {isRunning && currentLabel === step.title && (
+                    <div className="spinner" />
+                  )}
+                </div>
+                <div className="step-rows">
+                  {step.rows.map((row, ri) => (
+                    <StepRow key={ri} row={row} visible={isRowVisible(si, ri)} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom reply */}
+      <div className={`reply-section${isDone ? " visible" : ""}`}>
+        <div className="reply-header">
+          <span className="reply-title">系統自動回覆內容</span>
+          <span className={`badge${scenario.reply.badgeType === "error" ? " error" : scenario.reply.badgeType === "manual" ? " manual" : ""}`}>
+            {scenario.reply.badge}
+          </span>
+        </div>
+        <div className="reply-body">
+          {scenario.reply.content.map((line, i) =>
+            line === "" ? <br key={i} /> : <p key={i}>{line}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="footer">
+        {isRunning && (
+          <div className="processing-label">
+            <div className="spinner" />
+            正在處理：{currentLabel}…
+          </div>
+        )}
+        <button className="btn btn-secondary" onClick={reset}>重置</button>
+        <button
+          className="btn btn-primary"
+          onClick={runSimulation}
+          disabled={isRunning}
+        >
+          {isRunning ? "執行中…" : "模擬執行"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
