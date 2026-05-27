@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNF-1370 Prototype｜點數・兌換・電子票券</title>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif;
+       background: #e8edf2; min-height: 100vh; }
+
+/* ── Top Bar ── */
+.top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  background: #1a1a2e; display: flex; align-items: center;
+  justify-content: space-between; padding: 8px 16px; font-size: 12px;
+}
+.top-bar .brand { color: #7ecec4; font-weight: 700; font-size: 13px; }
+.top-bar .badge { background: #e65100; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.mode-toggle { display: flex; gap: 4px; background: #0f3460; border-radius: 20px; padding: 3px; }
+.mode-btn { padding: 4px 14px; border-radius: 16px; border: none; cursor: pointer; font-size: 11px; font-weight: 700; background: transparent; color: #aaa; transition: all .2s; }
+.mode-btn.active { background: #7ecec4; color: #1a1a2e; }
+
+/* ── Layout ── */
+#stage { display: flex; justify-content: center; padding: 52px 16px 40px; min-height: 100vh; align-items: flex-start; gap: 24px; }
+
+/* ── Device ── */
+.device {
+  width: 390px; min-height: 844px; background: #fff;
+  border-radius: 44px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  overflow: hidden; position: relative; transition: all .3s;
+  flex-shrink: 0;
+}
+
+
+/* ── Legend Panel ── */
+.legend {
+  width: 260px; background: #fff; border-radius: 16px;
+  padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  align-self: flex-start; position: sticky; top: 60px;
+}
+.legend h4 { font-size: 13px; font-weight: 800; color: #1a1a2e; margin-bottom: 14px; }
+.legend-flow { margin-bottom: 16px; }
+.legend-flow .flow-title { font-size: 11px; font-weight: 700; color: #fff; padding: 4px 10px; border-radius: 4px; margin-bottom: 8px; }
+.legend-flow.q .flow-title { background: #1565c0; }
+.legend-flow.r .flow-title { background: #00897b; }
+.legend-flow.t .flow-title { background: #e65100; }
+.legend-step { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.legend-dot { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff; }
+.legend-step .text { font-size: 11px; color: #424242; line-height: 1.4; }
+.legend-arrow { margin-left: 9px; font-size: 10px; color: #bbb; margin-bottom: 4px; }
+.legend-note { background: #fff8e1; border-radius: 8px; padding: 10px; font-size: 11px; color: #e65100; line-height: 1.5; margin-top: 12px; }
+
+/* ── Screen ── */
+.screen { display: none; flex-direction: column; min-height: 844px; background: #fff; animation: fadeIn .2s; }
+.screen.active { display: flex; }
+.device.kiosk .screen { min-height: 500px; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; } }
+
+/* ── Status Bar ── */
+.sbar { background: #00897b; color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 8px; }
+.sbar .back { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
+.sbar .title { flex: 1; text-align: center; font-size: 15px; font-weight: 700; }
+.sbar .sp { width: 28px; }
+
+/* ── Buttons ── */
+.btn { border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; padding: 14px; width: 100%; transition: all .2s; }
+.btn-green { background: #00897b; color: #fff; }
+.btn-green:hover { background: #00796b; }
+.btn-green:disabled { background: #b2dfdb; cursor: not-allowed; }
+.btn-outline { background: #fff; color: #00897b; border: 2px solid #00897b; }
+.btn-blue { background: #1565c0; color: #fff; }
+.btn-orange { background: #e65100; color: #fff; }
+.btn-gray { background: #f5f5f5; color: #757575; border: 1.5px solid #e0e0e0; }
+
+/* ── Tags ── */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.tag-green { background: #e0f2f1; color: #00897b; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.tag-gray { background: #f5f5f5; color: #757575; }
+
+/* ── Redeem Multi-select footer ── */
+.redeem-footer {
+  position: sticky; bottom: 0; background: #fff;
+  border-top: 1px solid #f0f0f0; padding: 12px 16px;
+  box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+}
+.pts-counter-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #f0fffe; border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+  border: 1.5px solid #b2dfdb;
+}
+.pts-counter-bar .pc-col { text-align: center; }
+.pts-counter-bar .pc-label { font-size: 10px; color: #9e9e9e; font-weight: 600; }
+.pts-counter-bar .pc-val { font-size: 16px; font-weight: 800; }
+.pts-counter-bar .pc-val.green { color: #00897b; }
+.pts-counter-bar .pc-val.red { color: #c62828; }
+.pts-counter-bar .pc-sep { color: #e0e0e0; font-size: 18px; }
+.redeem-item.selected-row { background: #f0fffe; }
+.ri-qty-ctrl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.rqc-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #00897b; background: #fff; color: #00897b; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; line-height: 1; transition: all .15s; }
+.rqc-btn:disabled { border-color: #e0e0e0; color: #bdbdbd; cursor: not-allowed; background: #f5f5f5; }
+.rqc-num { font-size: 18px; font-weight: 900; min-width: 24px; text-align: center; color: #bdbdbd; }
+.rqc-num.active { color: #00897b; }
+
+/* ── Divider ── */
+.dv { height: 1px; background: #f0f0f0; }
+.dv-thick { height: 8px; background: #f5f5f5; }
+
+/* ── Flow Stepper ── */
+.stepper { display: flex; padding: 10px 16px; background: #f9f9f9; border-bottom: 1px solid #eee; gap: 6px; overflow-x: auto; }
+.step { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #bdbdbd; white-space: nowrap; }
+.step.done { color: #00897b; }
+.step.curr { color: #00897b; font-weight: 700; }
+.step .dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.step.done .dot { background: #00897b; border-color: #00897b; color: #fff; }
+.step.curr .dot { background: #fff; border-color: #00897b; color: #00897b; font-weight: 900; }
+.step-arr { color: #e0e0e0; font-size: 10px; }
+
+/* ── Toast ── */
+.toast { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.8); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; white-space: nowrap; z-index: 200; }
+
+/* ════════════════════════════
+   S1 HOME
+════════════════════════════ */
+.home-hero { background: linear-gradient(135deg, #00897b, #26a69a); padding: 40px 24px 28px; color: #fff; text-align: center; }
+.home-hero .logo { width: 60px; height: 60px; background: rgba(255,255,255,.2); border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.home-hero h1 { font-size: 22px; font-weight: 800; }
+.home-hero p { font-size: 13px; opacity: .8; margin-top: 4px; }
+.home-body { padding: 28px 20px; flex: 1; }
+.home-entry { border: 1.5px solid #e0e0e0; border-radius: 14px; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: all .2s; }
+.home-entry:hover { border-color: #00897b; background: #f9ffff; }
+.home-entry .entry-icon { font-size: 28px; margin-bottom: 8px; }
+.home-entry .entry-title { font-size: 16px; font-weight: 800; color: #212121; margin-bottom: 4px; }
+.home-entry .entry-desc { font-size: 12px; color: #757575; line-height: 1.5; }
+.home-entry.highlight { border-color: #00897b; background: #f0fffe; }
+.home-entry.orange { border-color: #e65100; background: #fff8f5; }
+.home-entry.orange:hover { background: #fff3ec; }
+.home-entry.orange .entry-title { color: #e65100; }
+
+/* ════════════════════════════
+   S2 PHONE INPUT
+════════════════════════════ */
+.phone-input-wrap { flex: 1; display: flex; flex-direction: column; padding: 24px 20px; }
+.phone-display { border: 2px solid #00897b; border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; text-align: center; background: #f0fffe; }
+.phone-display .label { font-size: 12px; color: #9e9e9e; }
+.phone-display .number { font-size: 28px; font-weight: 800; color: #00897b; letter-spacing: 4px; min-height: 40px; }
+.numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.numpad-btn { padding: 18px; border-radius: 12px; border: 1.5px solid #e0e0e0; background: #fff; font-size: 20px; font-weight: 700; cursor: pointer; transition: all .15s; color: #212121; text-align: center; }
+.numpad-btn:hover { background: #e0f2f1; border-color: #00897b; }
+.numpad-btn.del { background: #fce4ec; border-color: #ef9a9a; color: #c62828; font-size: 16px; }
+.numpad-note { font-size: 12px; color: #9e9e9e; text-align: center; margin: 12px 0; }
+
+/* ════════════════════════════
+   S3 ORDER HISTORY (query result)
+════════════════════════════ */
+.member-info-bar { background: #f5f5f5; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+.member-info-bar .phone-label { font-size: 14px; font-weight: 700; color: #212121; }
+.member-info-bar .pts-badge { background: #e0f2f1; border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 700; color: #00897b; }
+.order-item { padding: 14px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background .15s; }
+.order-item:hover { background: #fafafa; }
+.order-icon { width: 42px; height: 42px; border-radius: 10px; background: #e0f2f1; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.order-info { flex: 1; }
+.order-info .date { font-size: 12px; color: #9e9e9e; }
+.order-info .items { font-size: 14px; font-weight: 600; color: #212121; margin: 2px 0; }
+.order-info .sub { font-size: 12px; color: #9e9e9e; }
+.order-right { text-align: right; }
+.order-right .amt { font-size: 16px; font-weight: 800; color: #212121; }
+.order-right .pts { font-size: 11px; color: #9e9e9e; }
+.sec-label { padding: 12px 20px 6px; font-size: 11px; font-weight: 700; color: #9e9e9e; letter-spacing: .5px; text-transform: uppercase; }
+.no-redeem-note { margin: 12px 20px; background: #e3f2fd; border-radius: 10px; padding: 12px 14px; display: flex; gap: 8px; align-items: flex-start; }
+.no-redeem-note .ni { font-size: 16px; flex-shrink: 0; }
+.no-redeem-note .nt { font-size: 12px; color: #1565c0; line-height: 1.6; }
+
+/* ════════════════════════════
+   S4 ORDER DETAIL
+════════════════════════════ */
+.detail-header { background: #f5f5f5; padding: 14px 20px; border-bottom: 1px solid #eee; }
+.detail-header .no { font-size: 12px; color: #9e9e9e; }
+.detail-header .dt { font-size: 15px; font-weight: 700; margin: 4px 0; }
+.detail-sec { padding: 14px 20px; }
+.detail-sec .sec-title { font-size: 13px; font-weight: 700; color: #424242; margin-bottom: 10px; }
+.detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.detail-row .lbl { font-size: 13px; color: #9e9e9e; }
+.detail-row .val { font-size: 13px; font-weight: 600; color: #212121; }
+.item-row { display: flex; justify-content: space-between; padding: 8px 0; }
+.item-row .iname { font-size: 14px; color: #424242; }
+.item-row .iprice { font-size: 14px; font-weight: 700; }
+.total-row { display: flex; justify-content: space-between; padding: 12px 0 0; border-top: 2px solid #f0f0f0; }
+.total-row .tlbl { font-size: 15px; font-weight: 700; }
+.total-row .tprice { font-size: 20px; font-weight: 900; color: #00897b; }
+.pts-box { background: #e0f2f1; border-radius: 10px; padding: 12px 14px; margin-top: 14px; display: flex; gap: 8px; align-items: center; }
+.pts-box .pi { font-size: 18px; }
+.pts-box .pt { font-size: 13px; color: #00897b; font-weight: 600; }
+
+/* ════════════════════════════
+   S5 MENU (Kiosk/Web ordering)
+════════════════════════════ */
+.menu-header { background: linear-gradient(135deg, #00897b, #26a69a); padding: 12px 20px; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+.menu-header .store { font-size: 15px; font-weight: 800; }
+.menu-header .cart-btn { background: rgba(255,255,255,.2); border: none; color: #fff; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.cat-bar { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #f0f0f0; }
+.cat-chip { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #e0e0e0; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all .2s; font-weight: 600; }
+.cat-chip.active { background: #00897b; border-color: #00897b; color: #fff; }
+.menu-items { flex: 1; overflow-y: auto; padding: 8px 0; }
+.menu-item { display: flex; align-items: center; padding: 12px 20px; gap: 12px; }
+.menu-item .mi-img { width: 64px; height: 64px; border-radius: 10px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+.menu-item .mi-info { flex: 1; }
+.menu-item .mi-name { font-size: 14px; font-weight: 700; color: #212121; }
+.menu-item .mi-desc { font-size: 12px; color: #9e9e9e; margin: 2px 0; }
+.menu-item .mi-price { font-size: 14px; font-weight: 800; color: #00897b; }
+.menu-item .add-btn { width: 32px; height: 32px; border-radius: 50%; background: #00897b; border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.menu-footer { padding: 12px 16px; border-top: 1px solid #f0f0f0; background: #fff; }
+.member-action-strip { display: flex; gap: 8px; margin-bottom: 10px; }
+.member-action-btn { flex: 1; padding: 10px 8px; border-radius: 10px; border: 1.5px solid; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all .2s; }
+.member-action-btn.pts { border-color: #00897b; color: #00897b; background: #f0fffe; }
+.member-action-btn.pts:hover { background: #e0f2f1; }
+.member-action-btn.ticket { border-color: #e65100; color: #e65100; background: #fff8f5; }
+.member-action-btn.ticket:hover { background: #fff3ec; }
+.checkout-bar { display: flex; gap: 8px; align-items: center; }
+.cart-summary { background: #f5f5f5; border-radius: 10px; padding: 8px 14px; flex: 1; }
+.cart-summary .cs-count { font-size: 11px; color: #9e9e9e; }
+.cart-summary .cs-total { font-size: 16px; font-weight: 800; color: #212121; }
+
+/* ════════════════════════════
+   S6 CART
+════════════════════════════ */
+.cart-item { padding: 14px 20px; display: flex; gap: 12px; align-items: flex-start; }
+.cart-item .ci-name { font-size: 14px; font-weight: 700; flex: 1; }
+.cart-item .ci-price { font-size: 14px; font-weight: 800; }
+.cart-item .ci-attr { font-size: 12px; color: #9e9e9e; margin-top: 2px; }
+.qty-ctrl { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.qty-btn { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #00897b; background: #fff; color: #00897b; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.qty-num { font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
+.cart-total-section { padding: 14px 20px; background: #f9f9f9; }
+.ct-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+.ct-row .ct-l { color: #757575; }
+.ct-row .ct-r { font-weight: 700; }
+.ct-total { display: flex; justify-content: space-between; padding-top: 12px; border-top: 2px solid #e0e0e0; }
+.ct-total .ctl { font-size: 16px; font-weight: 800; }
+.ct-total .ctr { font-size: 22px; font-weight: 900; color: #00897b; }
+.redeemed-chip { display: inline-flex; align-items: center; gap: 4px; background: #e0f2f1; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #00897b; margin: 0 20px 12px; }
+
+/* ════════════════════════════
+   S7 POINTS QUERY → SELECT REDEEM
+════════════════════════════ */
+.pts-summary { background: linear-gradient(135deg, #00897b, #26a69a); padding: 16px 20px; color: #fff; }
+.pts-summary .ps-phone { font-size: 12px; opacity: .8; }
+.pts-summary .ps-name { font-size: 16px; font-weight: 800; }
+.pts-summary .ps-pts { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
+.pts-summary .ps-num { font-size: 40px; font-weight: 900; line-height: 1; }
+.pts-summary .ps-unit { font-size: 14px; opacity: .8; }
+.pts-summary .ps-expire { font-size: 11px; opacity: .7; margin-top: 4px; }
+.redeem-item { padding: 14px 20px; display: flex; align-items: center; gap: 14px; }
+.redeem-item .ri-img { width: 60px; height: 60px; border-radius: 10px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+.redeem-item .ri-info { flex: 1; }
+.redeem-item .ri-name { font-size: 15px; font-weight: 700; color: #212121; }
+.redeem-item .ri-pts { font-size: 13px; color: #00897b; font-weight: 700; margin: 2px 0; }
+.redeem-item .ri-stock { font-size: 11px; color: #9e9e9e; }
+.ri-select { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; flex-shrink: 0; font-size: 14px; }
+.ri-select.selected { background: #00897b; border-color: #00897b; color: #fff; }
+.ri-select.disabled { background: #f5f5f5; cursor: not-allowed; }
+
+/* ════════════════════════════
+   S8 TICKET LIST (during order)
+════════════════════════════ */
+.ticket-card { margin: 10px 16px; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.ticket-card .tc-top { background: linear-gradient(135deg, #e65100, #ff8f00); padding: 14px 16px; color: #fff; display: flex; align-items: center; gap: 10px; }
+.tc-top .tci { font-size: 26px; }
+.tc-top .tct { flex: 1; }
+.tc-top .tct .tcn { font-size: 14px; font-weight: 800; }
+.tc-top .tct .tcf { font-size: 11px; opacity: .8; }
+.tc-top .tc-badge { background: rgba(255,255,255,.25); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700; }
+.ticket-card .tc-bot { background: #fff9f0; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.tc-bot .tc-val { font-size: 13px; font-weight: 800; color: #e65100; }
+.tc-bot .tc-exp { font-size: 11px; color: #9e9e9e; }
+.use-btn { background: #e65100; color: #fff; border: none; border-radius: 20px; padding: 7px 16px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.use-btn:hover { background: #bf360c; }
+.ticket-card.used .tc-top { background: linear-gradient(135deg, #9e9e9e, #bdbdbd); }
+.ticket-card.used .tc-bot { background: #fafafa; }
+
+/* ════════════════════════════
+   OTP Screen
+════════════════════════════ */
+.otp-wrap { flex: 1; display: flex; flex-direction: column; padding: 28px 24px; }
+.otp-wrap .otp-icon { font-size: 52px; text-align: center; margin-bottom: 14px; }
+.otp-wrap .otp-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+.otp-wrap .otp-sub { font-size: 13px; color: #757575; text-align: center; margin-bottom: 24px; line-height: 1.6; }
+.item-preview { background: #f5f5f5; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.item-preview .ip-icon { font-size: 28px; }
+.item-preview .ip-name { font-size: 14px; font-weight: 700; }
+.item-preview .ip-pts { font-size: 13px; font-weight: 700; margin-top: 2px; }
+.otp-boxes { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; }
+.otp-box { width: 46px; height: 54px; border: 2px solid #ddd; border-radius: 10px; font-size: 22px; font-weight: 800; text-align: center; outline: none; transition: border .2s; }
+.otp-box:focus { border-color: #00897b; }
+.otp-box.filled { border-color: #00897b; background: #e0f2f1; }
+.resend { text-align: center; font-size: 12px; color: #9e9e9e; margin-top: 10px; }
+.resend span { color: #00897b; cursor: pointer; font-weight: 700; }
+
+/* ════════════════════════════
+   Success
+════════════════════════════ */
+.success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 24px; }
+.success-anim { font-size: 72px; animation: pop .4s; }
+@keyframes pop { 0%{transform:scale(0)} 70%{transform:scale(1.15)} 100%{transform:scale(1)} }
+.success-title { font-size: 22px; font-weight: 800; margin: 14px 0 8px; }
+.success-sub { font-size: 14px; color: #757575; text-align: center; line-height: 1.6; margin-bottom: 28px; }
+.success-card { border-radius: 14px; padding: 16px 20px; width: 100%; margin-bottom: 20px; text-align: center; }
+.sc-lbl { font-size: 12px; }
+.sc-val { font-size: 28px; font-weight: 900; }
+.sc-sub { font-size: 12px; margin-top: 2px; }
+
+/* ── Kiosk overrides（尺寸與 Web 相同，無額外覆寫）── */
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <span class="brand">CNF-1370 Prototype</span>
+    <span class="badge" style="margin-left:8px">91APP 會員串接</span>
+  </div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-web" onclick="setMode('web')">📱 Web</button>
+    <button class="mode-btn" id="btn-kiosk" onclick="setMode('kiosk')">🖥️ Kiosk</button>
+  </div>
+</div>
+
+<div id="stage">
+
+<!-- ── Legend ── -->
+<div class="legend" id="legend-panel">
+  <h4>🗺 流程說明</h4>
+
+  <div class="legend-flow q" id="legend-query-flow">
+    <div class="flow-title">① 訂單查詢（消費記錄）</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#1565c0">1</div><div class="text">首頁 → 查詢訂單</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#1565c0">2</div><div class="text">輸入手機號碼</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#1565c0">3</div><div class="text">顯示點數餘額 + 消費記錄<br><strong>（不顯示可兌換商品）</strong></div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#1565c0">4</div><div class="text">點入單筆 → 消費明細</div></div>
+  </div>
+
+  <div class="legend-flow" id="legend-pay-flow" style="display:none">
+    <div class="flow-title" style="background:#6a1b9a">① 付款流程</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#6a1b9a">1</div><div class="text">首頁 → 前往付款</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#6a1b9a">2</div><div class="text">確認購物車品項</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#6a1b9a">3</div><div class="text">使用點數 / 票券折抵<br><strong>（選填）</strong></div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#6a1b9a">4</div><div class="text">完成付款</div></div>
+  </div>
+
+  <div class="legend-flow r">
+    <div class="flow-title">② 點數兌換商品（點餐中）</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#00897b">1</div><div class="text">首頁 → 開始點餐</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#00897b">2</div><div class="text">菜單頁 / 購物車<br>點擊「⭐ 兌換點數」按鈕</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#00897b">3</div><div class="text">輸入手機 → 顯示點數<br><strong>+ 可兌換商品清單</strong></div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#00897b">4</div><div class="text">選擇商品 → OTP 驗證</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#00897b">5</div><div class="text">核銷成功 → 加入購物車</div></div>
+  </div>
+
+  <div class="legend-flow t">
+    <div class="flow-title">③ 電子票券核銷（點餐中）</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#e65100">1</div><div class="text">菜單頁 / 購物車<br>點擊「🎟 使用票券」按鈕</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#e65100">2</div><div class="text">輸入手機 → 顯示票券清單</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#e65100">3</div><div class="text">點擊使用 → OTP 驗證</div></div>
+    <div class="legend-arrow">↓</div>
+    <div class="legend-step"><div class="legend-dot" style="background:#e65100">4</div><div class="text">核銷成功 → 折扣加入訂單</div></div>
+  </div>
+
+  <div class="legend-note">⚠️ 兌換商品與票券核銷<br>只在「點餐過程」中出現，<br>不在獨立的「訂單查詢」入口顯示。</div>
+</div>
+
+<!-- ── Device ── -->
+<div class="device" id="device">
+
+<!-- ═══════════════════════════════════
+     S1: HOME
+═══════════════════════════════════ -->
+<div class="screen active" id="s-home">
+  <div class="home-hero">
+    <div class="logo">🏪</div>
+    <h1>電小二示範店</h1>
+    <p>91APP 會員服務</p>
+  </div>
+  <div class="home-body">
+    <div class="home-entry" id="home-query-entry" onclick="goTo('s-query-phone', 'query')">
+      <div class="entry-icon">📋</div>
+      <div class="entry-title">查詢訂單 / 消費記錄</div>
+      <div class="entry-desc">輸入手機號碼，查看歷史消費紀錄、點數餘額</div>
+    </div>
+    <div class="home-entry orange" id="home-pay-entry" style="display:none" onclick="goTo('s-cart')">
+      <div class="entry-icon">💳</div>
+      <div class="entry-title">前往付款</div>
+      <div class="entry-desc">結帳、使用點數兌換或電子票券折抵</div>
+    </div>
+    <div class="home-entry highlight" onclick="goTo('s-menu')">
+      <div class="entry-icon">🍽️</div>
+      <div class="entry-title">開始點餐</div>
+      <div class="entry-desc">瀏覽菜單、使用點數兌換商品或使用電子票券</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S2: PHONE INPUT (共用)
+═══════════════════════════════════ -->
+<div class="screen" id="s-query-phone">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-home')">←</button>
+    <div class="title" id="phone-screen-title">查詢訂單</div>
+    <div class="sp"></div>
+  </div>
+  <div class="phone-input-wrap">
+    <div class="phone-display">
+      <div class="label">請輸入手機號碼</div>
+      <div class="number" id="phone-num">_</div>
+    </div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="numTap('1')">1</button>
+      <button class="numpad-btn" onclick="numTap('2')">2</button>
+      <button class="numpad-btn" onclick="numTap('3')">3</button>
+      <button class="numpad-btn" onclick="numTap('4')">4</button>
+      <button class="numpad-btn" onclick="numTap('5')">5</button>
+      <button class="numpad-btn" onclick="numTap('6')">6</button>
+      <button class="numpad-btn" onclick="numTap('7')">7</button>
+      <button class="numpad-btn" onclick="numTap('8')">8</button>
+      <button class="numpad-btn" onclick="numTap('9')">9</button>
+      <button class="numpad-btn del" onclick="numDel()">⌫</button>
+      <button class="numpad-btn" onclick="numTap('0')">0</button>
+      <button class="numpad-btn" onclick="numClear()" style="font-size:13px">清除</button>
+    </div>
+    <p class="numpad-note">輸入 10 碼手機號碼後自動查詢</p>
+    <div style="margin-top:16px">
+      <button class="btn btn-green" id="phone-confirm-btn" onclick="phoneConfirm()" disabled>確認查詢</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S3: ORDER HISTORY (query result)
+     ★ 只顯示消費記錄，不顯示兌換商品
+═══════════════════════════════════ -->
+<div class="screen" id="s-order-history">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-home')">←</button>
+    <div class="title">消費記錄</div>
+    <div class="sp"></div>
+  </div>
+  <div class="member-info-bar">
+    <div class="phone-label" id="history-phone">0912-345-678</div>
+    <div class="pts-badge">⭐ 1,280 點</div>
+  </div>
+
+  <!-- ★ 說明：不顯示可兌換商品 -->
+  <div class="no-redeem-note">
+    <div class="ni">ℹ️</div>
+    <div class="nt">
+      <strong>查詢模式</strong>：此頁僅顯示消費記錄與點數餘額。<br>
+      如需使用點數兌換商品或電子票券，請於<strong>點餐過程</strong>中操作。
+    </div>
+  </div>
+
+  <div class="sec-label">最近消費紀錄</div>
+
+  <div class="order-item" onclick="goTo('s-order-detail', 'od1')">
+    <div class="order-icon">🍣</div>
+    <div class="order-info">
+      <div class="date">2026/05/24 12:43 · 外帶</div>
+      <div class="items">鮮魚握壽司 × 2、味噌湯</div>
+      <div class="sub">共 3 項品項</div>
+    </div>
+    <div class="order-right">
+      <div class="amt">$420</div>
+      <div class="pts">+42 點</div>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="order-item" onclick="goTo('s-order-detail', 'od2')">
+    <div class="order-icon">🍱</div>
+    <div class="order-info">
+      <div class="date">2026/05/20 19:12 · 內用</div>
+      <div class="items">炸雞便當、飲料 × 2</div>
+      <div class="sub">共 3 項品項</div>
+    </div>
+    <div class="order-right">
+      <div class="amt">$350</div>
+      <div class="pts">+35 點</div>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="order-item" onclick="goTo('s-order-detail', 'od3')">
+    <div class="order-icon">🍔</div>
+    <div class="order-info">
+      <div class="date">2026/05/15 13:05 · 外帶自取</div>
+      <div class="items">特級漢堡套餐</div>
+      <div class="sub">共 1 項品項</div>
+    </div>
+    <div class="order-right">
+      <div class="amt">$180</div>
+      <div class="pts">+18 點</div>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="order-item" onclick="goTo('s-order-detail', 'od4')">
+    <div class="order-icon">⭐</div>
+    <div class="order-info">
+      <div class="date">2026/04/22 12:15 · 內用</div>
+      <div class="items">點數兌換：香草冰淇淋</div>
+      <div class="sub" style="margin-top:4px"><span class="tag tag-blue">點數兌換</span></div>
+    </div>
+    <div class="order-right">
+      <div class="amt">$0</div>
+      <div class="pts">-200 點</div>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="order-item" onclick="goTo('s-order-detail', 'od5')">
+    <div class="order-icon">🎟️</div>
+    <div class="order-info">
+      <div class="date">2026/04/15 18:30 · 內用</div>
+      <div class="items">消費折扣券 $100 已核銷</div>
+      <div class="sub" style="margin-top:4px"><span class="tag tag-orange">電子票券</span></div>
+    </div>
+    <div class="order-right">
+      <div class="amt">$680</div>
+      <div class="pts">+58 點</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S4: ORDER DETAIL
+═══════════════════════════════════ -->
+<div class="screen" id="s-order-detail">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-order-history')">←</button>
+    <div class="title">消費明細</div>
+    <div class="sp"></div>
+  </div>
+  <div class="detail-header">
+    <div class="no" id="od-no">訂單編號：#A20260524001</div>
+    <div class="dt" id="od-dt">2026年5月24日 12:43</div>
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap" id="od-tags">
+      <span class="tag tag-green">✅ 付款完成</span>
+      <span class="tag tag-blue">外帶</span>
+    </div>
+  </div>
+  <div class="detail-sec">
+    <div class="sec-title">訂購資訊</div>
+    <div class="detail-row"><span class="lbl">消費時間</span><span class="val" id="od-time">2026/05/24 12:43</span></div>
+    <div class="detail-row"><span class="lbl">消費手機</span><span class="val">0912-345-678</span></div>
+    <div class="detail-row"><span class="lbl">取餐方式</span><span class="val" id="od-type">外帶自取</span></div>
+    <div class="detail-row"><span class="lbl">付款方式</span><span class="val" id="od-pay">LINE Pay</span></div>
+  </div>
+  <div class="dv"></div>
+  <div class="detail-sec">
+    <div class="sec-title">消費品項</div>
+    <div id="od-items">
+      <div class="item-row"><span class="iname">鮮魚握壽司 × 2</span><span class="iprice">$320</span></div>
+      <div class="item-row"><span class="iname">味噌湯</span><span class="iprice">$60</span></div>
+      <div class="item-row"><span class="iname">外帶費</span><span class="iprice">$40</span></div>
+    </div>
+    <div class="total-row">
+      <span class="tlbl">消費金額</span>
+      <span class="tprice" id="od-total">$420</span>
+    </div>
+  </div>
+  <div class="detail-sec">
+    <div class="pts-box">
+      <div class="pi">⭐</div>
+      <div class="pt" id="od-pts-txt">本次消費累積 <strong>42 點</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S5: MENU (ordering context)
+     ★ 有「兌換點數」與「使用票券」按鈕
+═══════════════════════════════════ -->
+<div class="screen" id="s-menu">
+  <div class="menu-header">
+    <div class="store">電小二示範店</div>
+    <button class="cart-btn" onclick="goTo('s-cart')">🛒 購物車 (3)</button>
+  </div>
+  <div class="cat-bar">
+    <div class="cat-chip active">熱門</div>
+    <div class="cat-chip">主食</div>
+    <div class="cat-chip">飲品</div>
+    <div class="cat-chip">甜點</div>
+    <div class="cat-chip">套餐</div>
+  </div>
+  <div class="menu-items">
+    <div class="menu-item">
+      <div class="mi-img">🍣</div>
+      <div class="mi-info">
+        <div class="mi-name">鮮魚握壽司（6貫）</div>
+        <div class="mi-desc">每日新鮮漁獲</div>
+        <div class="mi-price">$280</div>
+      </div>
+      <button class="add-btn" onclick="showToast('已加入購物車')">＋</button>
+    </div>
+    <div class="dv"></div>
+    <div class="menu-item">
+      <div class="mi-img">🍱</div>
+      <div class="mi-info">
+        <div class="mi-name">精緻便當</div>
+        <div class="mi-desc">主菜 + 3 道配菜</div>
+        <div class="mi-price">$180</div>
+      </div>
+      <button class="add-btn" onclick="showToast('已加入購物車')">＋</button>
+    </div>
+    <div class="dv"></div>
+    <div class="menu-item">
+      <div class="mi-img">🍔</div>
+      <div class="mi-info">
+        <div class="mi-name">特級漢堡</div>
+        <div class="mi-desc">雙層肉排 + 特製醬</div>
+        <div class="mi-price">$220</div>
+      </div>
+      <button class="add-btn" onclick="showToast('已加入購物車')">＋</button>
+    </div>
+    <div class="dv"></div>
+    <div class="menu-item">
+      <div class="mi-img">🍦</div>
+      <div class="mi-info">
+        <div class="mi-name">香草冰淇淋</div>
+        <div class="mi-desc">可點數兌換</div>
+        <div class="mi-price">$80 <span class="tag tag-green" style="margin-left:4px">可兌換</span></div>
+      </div>
+      <button class="add-btn" onclick="showToast('已加入購物車')">＋</button>
+    </div>
+    <div class="dv"></div>
+    <div class="menu-item">
+      <div class="mi-img">🧃</div>
+      <div class="mi-info">
+        <div class="mi-name">鮮榨果汁</div>
+        <div class="mi-desc">當季水果現打</div>
+        <div class="mi-price">$120 <span class="tag tag-green" style="margin-left:4px">可兌換</span></div>
+      </div>
+      <button class="add-btn" onclick="showToast('已加入購物車')">＋</button>
+    </div>
+  </div>
+  <div class="menu-footer">
+    <!-- ★ 兌換點數 / 使用票券 入口 -->
+    <div class="member-action-strip">
+      <button class="member-action-btn pts" onclick="goTo('s-redeem-phone', 'redeem')">⭐ 兌換點數</button>
+      <button class="member-action-btn ticket" onclick="goTo('s-ticket-phone', 'ticket')">🎟️ 使用票券</button>
+    </div>
+    <div class="checkout-bar">
+      <div class="cart-summary">
+        <div class="cs-count">共 3 項商品</div>
+        <div class="cs-total">$680</div>
+      </div>
+      <button class="btn btn-green" style="width:auto;padding:12px 20px" onclick="goTo('s-cart')">前往購物車</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S6: CART
+═══════════════════════════════════ -->
+<div class="screen" id="s-cart">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-menu')">←</button>
+    <div class="title">購物車</div>
+    <div class="sp"></div>
+  </div>
+  <div class="sec-label">共 3 項商品</div>
+  <div class="cart-item">
+    <div style="flex:1">
+      <div class="ci-name">鮮魚握壽司（6貫）</div>
+      <div class="ci-attr">× 1</div>
+      <div class="qty-ctrl">
+        <button class="qty-btn">−</button>
+        <span class="qty-num">1</span>
+        <button class="qty-btn">＋</button>
+      </div>
+    </div>
+    <div class="ci-price">$280</div>
+  </div>
+  <div class="dv"></div>
+  <div class="cart-item">
+    <div style="flex:1">
+      <div class="ci-name">精緻便當</div>
+      <div class="ci-attr">× 2</div>
+      <div class="qty-ctrl">
+        <button class="qty-btn">−</button>
+        <span class="qty-num">2</span>
+        <button class="qty-btn">＋</button>
+      </div>
+    </div>
+    <div class="ci-price">$360</div>
+  </div>
+  <div class="dv"></div>
+  <!-- ★ 已兌換的品項（如有） -->
+  <div id="redeemed-item-show" style="display:none">
+    <div class="cart-item">
+      <div style="flex:1">
+        <div class="ci-name" id="cart-redeemed-name">香草冰淇淋</div>
+        <div class="ci-attr" style="color:#00897b">⭐ 點數兌換（-200點）</div>
+      </div>
+      <div class="ci-price" style="color:#00897b">$0</div>
+    </div>
+    <div class="dv"></div>
+  </div>
+  <!-- ★ 票券折扣（如有） -->
+  <div id="ticket-discount-show" style="display:none">
+    <div class="redeemed-chip" id="cart-ticket-chip">🎟️ 票券折抵 $100</div>
+  </div>
+  <div class="dv-thick"></div>
+  <div class="cart-total-section">
+    <div class="ct-row"><span class="ct-l">商品小計</span><span class="ct-r">$640</span></div>
+    <div class="ct-row" id="cart-redeem-row" style="display:none"><span class="ct-l">點數兌換折扣</span><span class="ct-r" style="color:#00897b">-$0</span></div>
+    <div class="ct-row" id="cart-ticket-row" style="display:none"><span class="ct-l">票券折抵</span><span class="ct-r" style="color:#e65100">-$100</span></div>
+    <div class="ct-total" id="cart-total-display">
+      <span class="ctl">合計</span>
+      <span class="ctr" id="cart-total">$640</span>
+    </div>
+  </div>
+  <!-- ★ 兌換點數 / 使用票券 在購物車也有 -->
+  <div style="padding: 12px 20px 0">
+    <div class="member-action-strip">
+      <button class="member-action-btn pts" onclick="goTo('s-redeem-phone', 'redeem')">⭐ 兌換點數</button>
+      <button class="member-action-btn ticket" onclick="goTo('s-ticket-phone', 'ticket')">🎟️ 使用票券</button>
+    </div>
+    <button class="btn btn-green" onclick="showToast('前往結帳...')">前往結帳</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S7a: PHONE INPUT for REDEEM
+═══════════════════════════════════ -->
+<div class="screen" id="s-redeem-phone">
+  <div class="sbar">
+    <button class="back" onclick="goBackFromPhone()">←</button>
+    <div class="title">兌換點數 - 輸入手機</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step curr"><div class="dot">1</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">2</div>選擇商品</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">3</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="phone-input-wrap">
+    <div class="phone-display">
+      <div class="label">請輸入會員手機號碼</div>
+      <div class="number" id="redeem-phone-num">_</div>
+    </div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="numTap2('1')">1</button>
+      <button class="numpad-btn" onclick="numTap2('2')">2</button>
+      <button class="numpad-btn" onclick="numTap2('3')">3</button>
+      <button class="numpad-btn" onclick="numTap2('4')">4</button>
+      <button class="numpad-btn" onclick="numTap2('5')">5</button>
+      <button class="numpad-btn" onclick="numTap2('6')">6</button>
+      <button class="numpad-btn" onclick="numTap2('7')">7</button>
+      <button class="numpad-btn" onclick="numTap2('8')">8</button>
+      <button class="numpad-btn" onclick="numTap2('9')">9</button>
+      <button class="numpad-btn del" onclick="numDel2()">⌫</button>
+      <button class="numpad-btn" onclick="numTap2('0')">0</button>
+      <button class="numpad-btn" onclick="numClear2()" style="font-size:13px">清除</button>
+    </div>
+    <p class="numpad-note">輸入 10 碼後自動查詢點數與可兌換商品</p>
+    <button class="btn btn-green" id="redeem-phone-btn" onclick="goToRedeemSelect()" disabled style="margin-top:16px">查詢點數</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S8: REDEEM SELECT
+     ★ 顯示點數 + 可兌換商品
+═══════════════════════════════════ -->
+<div class="screen" id="s-redeem-select">
+  <div class="sbar">
+    <button class="back" onclick="goBackFromRedeemSelect()">←</button>
+    <div class="title">選擇兌換商品</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step done"><div class="dot">✓</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step curr"><div class="dot">2</div>選擇商品</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">3</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">4</div>完成</div>
+  </div>
+  <!-- ★ 點數摘要顯示 -->
+  <div class="pts-summary">
+    <div class="ps-phone" id="rs-phone">0912-345-678</div>
+    <div class="ps-name">會員點數</div>
+    <div class="ps-pts">
+      <div class="ps-num">1,280</div>
+      <div class="ps-unit">點</div>
+    </div>
+    <div class="ps-expire">最近到期：300 點（2026/06/30）</div>
+  </div>
+  <div class="sec-label">可兌換商品（同品項可多件，點數足夠即可）</div>
+
+  <div class="redeem-item" id="row-ice">
+    <div class="ri-img">🍦</div>
+    <div class="ri-info">
+      <div class="ri-name">香草冰淇淋</div>
+      <div class="ri-pts">⭐ 200 點</div>
+      <div class="ri-stock" id="stock-ice">庫存充足</div>
+    </div>
+    <div class="ri-qty-ctrl">
+      <button class="rqc-btn" id="minus-ice" onclick="adjustQty('ice',-1)" disabled>−</button>
+      <span class="rqc-num" id="qty-ice">0</span>
+      <button class="rqc-btn" id="plus-ice" onclick="adjustQty('ice',1)">＋</button>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="redeem-item" id="row-juice">
+    <div class="ri-img">🧃</div>
+    <div class="ri-info">
+      <div class="ri-name">鮮榨果汁（中杯）</div>
+      <div class="ri-pts">⭐ 350 點</div>
+      <div class="ri-stock" id="stock-juice">庫存充足</div>
+    </div>
+    <div class="ri-qty-ctrl">
+      <button class="rqc-btn" id="minus-juice" onclick="adjustQty('juice',-1)" disabled>−</button>
+      <span class="rqc-num" id="qty-juice">0</span>
+      <button class="rqc-btn" id="plus-juice" onclick="adjustQty('juice',1)">＋</button>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="redeem-item" id="row-bento">
+    <div class="ri-img">🍱</div>
+    <div class="ri-info">
+      <div class="ri-name">精緻便當（任選）</div>
+      <div class="ri-pts">⭐ 800 點</div>
+      <div class="ri-stock" id="stock-bento">庫存充足</div>
+    </div>
+    <div class="ri-qty-ctrl">
+      <button class="rqc-btn" id="minus-bento" onclick="adjustQty('bento',-1)" disabled>−</button>
+      <span class="rqc-num" id="qty-bento">0</span>
+      <button class="rqc-btn" id="plus-bento" onclick="adjustQty('bento',1)">＋</button>
+    </div>
+  </div>
+  <div class="dv"></div>
+  <div class="redeem-item" id="row-coffee">
+    <div class="ri-img">☕</div>
+    <div class="ri-info">
+      <div class="ri-name">精品咖啡（大杯）</div>
+      <div class="ri-pts">⭐ 1,500 點</div>
+      <div class="ri-stock" id="stock-coffee" style="color:#e57373">點數不足</div>
+    </div>
+    <div class="ri-qty-ctrl">
+      <button class="rqc-btn" id="minus-coffee" onclick="adjustQty('coffee',-1)" disabled>−</button>
+      <span class="rqc-num" id="qty-coffee">0</span>
+      <button class="rqc-btn" id="plus-coffee" onclick="adjustQty('coffee',1)" disabled>＋</button>
+    </div>
+  </div>
+
+  <!-- ★ 多選即時點數計算 footer -->
+  <div class="redeem-footer">
+    <div class="pts-counter-bar">
+      <div class="pc-col">
+        <div class="pc-label">可用點數</div>
+        <div class="pc-val green">1,280</div>
+      </div>
+      <div class="pc-sep">−</div>
+      <div class="pc-col">
+        <div class="pc-label">已選合計</div>
+        <div class="pc-val" id="pts-used-display" style="color:#424242">0</div>
+      </div>
+      <div class="pc-sep">=</div>
+      <div class="pc-col">
+        <div class="pc-label">兌換後剩餘</div>
+        <div class="pc-val green" id="pts-remain-display">1,280</div>
+      </div>
+    </div>
+    <button class="btn btn-green" id="redeem-confirm-btn" onclick="goToRedeemOTP()" disabled>請選擇要兌換的商品</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S9: REDEEM OTP
+═══════════════════════════════════ -->
+<div class="screen" id="s-redeem-otp">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-redeem-select')">←</button>
+    <div class="title">兌換驗證</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step done"><div class="dot">✓</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step done"><div class="dot">✓</div>選擇商品</div>
+    <div class="step-arr">›</div>
+    <div class="step curr"><div class="dot">3</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="otp-wrap">
+    <div class="otp-icon">⭐</div>
+    <div class="otp-title">輸入驗證碼</div>
+    <div class="otp-sub">OTP 驗證碼已傳送至<br><strong id="otp-r-phone">0912-345-678</strong></div>
+    <div class="item-preview">
+      <div class="ip-icon" id="otp-r-icon">🍦</div>
+      <div style="flex:1">
+        <div class="ip-name" id="otp-r-name">香草冰淇淋</div>
+        <div class="ip-pts" style="color:#00897b" id="otp-r-pts">⭐ 200 點</div>
+        <div style="font-size:11px;color:#9e9e9e;margin-top:2px" id="otp-r-count"></div>
+      </div>
+    </div>
+    <div class="otp-boxes">
+      <input class="otp-box" maxlength="1" id="r1" type="text" oninput="ot(this,'r2')">
+      <input class="otp-box" maxlength="1" id="r2" type="text" oninput="ot(this,'r3')">
+      <input class="otp-box" maxlength="1" id="r3" type="text" oninput="ot(this,'r4')">
+      <input class="otp-box" maxlength="1" id="r4" type="text" oninput="ot(this,'r5')">
+      <input class="otp-box" maxlength="1" id="r5" type="text" oninput="ot(this,'r6')">
+      <input class="otp-box" maxlength="1" id="r6" type="text" oninput="otEnd(this)">
+    </div>
+    <button class="btn btn-green" onclick="confirmRedeem()">確認兌換</button>
+    <p class="resend">沒收到？<span onclick="showToast('驗證碼已重新發送')">重新發送</span></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S10: REDEEM SUCCESS
+═══════════════════════════════════ -->
+<div class="screen" id="s-redeem-success">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-cart')">←</button>
+    <div class="title">兌換成功</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step done"><div class="dot">✓</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step done"><div class="dot">✓</div>選擇商品</div>
+    <div class="step-arr">›</div>
+    <div class="step done"><div class="dot">✓</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step curr"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="success-wrap">
+    <div class="success-anim">🎉</div>
+    <div class="success-title">兌換成功！</div>
+    <div class="success-sub" id="r-success-msg"><strong>香草冰淇淋</strong> 已加入訂單</div>
+    <div class="success-card" style="background:#e0f2f1">
+      <div class="sc-lbl" style="color:#00897b">扣除點數</div>
+      <div class="sc-val" style="color:#00897b" id="r-success-pts">-200 點</div>
+      <div class="sc-sub" style="color:#757575" id="r-success-remain">剩餘：1,080 點</div>
+    </div>
+    <button class="btn btn-green" onclick="applyRedeemToCart()">返回購物車</button>
+    <div style="height:12px"></div>
+    <button class="btn btn-gray" onclick="goTo('s-menu')">繼續點餐</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S7b: PHONE INPUT for TICKET
+═══════════════════════════════════ -->
+<div class="screen" id="s-ticket-phone">
+  <div class="sbar">
+    <button class="back" onclick="goBackFromPhone()">←</button>
+    <div class="title">使用票券 - 輸入手機</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step curr"><div class="dot">1</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">2</div>選擇票券</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">3</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="phone-input-wrap">
+    <div class="phone-display">
+      <div class="label">請輸入會員手機號碼</div>
+      <div class="number" id="ticket-phone-num">_</div>
+    </div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="numTap3('1')">1</button>
+      <button class="numpad-btn" onclick="numTap3('2')">2</button>
+      <button class="numpad-btn" onclick="numTap3('3')">3</button>
+      <button class="numpad-btn" onclick="numTap3('4')">4</button>
+      <button class="numpad-btn" onclick="numTap3('5')">5</button>
+      <button class="numpad-btn" onclick="numTap3('6')">6</button>
+      <button class="numpad-btn" onclick="numTap3('7')">7</button>
+      <button class="numpad-btn" onclick="numTap3('8')">8</button>
+      <button class="numpad-btn" onclick="numTap3('9')">9</button>
+      <button class="numpad-btn del" onclick="numDel3()">⌫</button>
+      <button class="numpad-btn" onclick="numTap3('0')">0</button>
+      <button class="numpad-btn" onclick="numClear3()" style="font-size:13px">清除</button>
+    </div>
+    <p class="numpad-note">輸入 10 碼後查詢電子票券</p>
+    <button class="btn btn-orange" id="ticket-phone-btn" onclick="goToTicketList()" disabled style="margin-top:16px">查詢票券</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S11: TICKET LIST
+═══════════════════════════════════ -->
+<div class="screen" id="s-ticket-list">
+  <div class="sbar">
+    <button class="back" onclick="goBackFromTicketList()">←</button>
+    <div class="title">選擇票券</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step done"><div class="dot">✓</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step curr"><div class="dot">2</div>選擇票券</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">3</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="member-info-bar" style="margin-bottom:4px">
+    <div class="phone-label" id="tl-phone">0912-345-678</div>
+    <div style="font-size:12px;color:#9e9e9e">有效票券 3 張</div>
+  </div>
+
+  <div class="ticket-card">
+    <div class="tc-top">
+      <div class="tci">🎟️</div>
+      <div class="tct"><div class="tcn">消費折扣券 $100</div><div class="tcf">91APP 禮贈 · 電小二示範店</div></div>
+      <div class="tc-badge">可使用</div>
+    </div>
+    <div class="tc-bot">
+      <div><div class="tc-val">折抵 NT$100</div><div class="tc-exp">有效期：2026/07/31</div></div>
+      <button class="use-btn" onclick="startTicket('消費折扣券 $100', '折抵 NT$100', '2026/07/31')">使用此券</button>
+    </div>
+  </div>
+
+  <div class="ticket-card">
+    <div class="tc-top">
+      <div class="tci">🎁</div>
+      <div class="tct"><div class="tcn">香草冰淇淋兌換券</div><div class="tcf">生日禮 · 91APP</div></div>
+      <div class="tc-badge">可使用</div>
+    </div>
+    <div class="tc-bot">
+      <div><div class="tc-val">免費兌換 1 份</div><div class="tc-exp">有效期：2026/06/15</div></div>
+      <button class="use-btn" onclick="startTicket('冰淇淋兌換券', '免費兌換香草冰淇淋×1', '2026/06/15')">使用此券</button>
+    </div>
+  </div>
+
+  <div class="ticket-card">
+    <div class="tc-top">
+      <div class="tci">🍣</div>
+      <div class="tct"><div class="tcn">壽司 9 折優惠券</div><div class="tcf">會員升等禮 · 91APP</div></div>
+      <div class="tc-badge">可使用</div>
+    </div>
+    <div class="tc-bot">
+      <div><div class="tc-val">壽司類 9 折</div><div class="tc-exp">有效期：2026/08/31</div></div>
+      <button class="use-btn" onclick="startTicket('壽司 9 折優惠券', '壽司類商品 9 折', '2026/08/31')">使用此券</button>
+    </div>
+  </div>
+
+  <div class="ticket-card used">
+    <div class="tc-top">
+      <div class="tci">✅</div>
+      <div class="tct"><div class="tcn">迎新折扣券 $50</div><div class="tcf">新會員禮 · 91APP</div></div>
+      <div class="tc-badge">已核銷</div>
+    </div>
+    <div class="tc-bot">
+      <div><div style="font-size:12px;color:#9e9e9e">核銷：2026/04/15</div></div>
+      <span class="tag tag-gray">已使用</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S12: TICKET OTP
+═══════════════════════════════════ -->
+<div class="screen" id="s-ticket-otp">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-ticket-list')">←</button>
+    <div class="title">票券核銷驗證</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step done"><div class="dot">✓</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step done"><div class="dot">✓</div>選擇票券</div>
+    <div class="step-arr">›</div>
+    <div class="step curr"><div class="dot">3</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="otp-wrap">
+    <div class="otp-icon">🎟️</div>
+    <div class="otp-title">輸入驗證碼</div>
+    <div class="otp-sub">核銷驗證碼已傳送至<br><strong id="otp-t-phone">0912-345-678</strong></div>
+    <div class="item-preview">
+      <div class="ip-icon">🎟️</div>
+      <div>
+        <div class="ip-name" id="otp-t-name">消費折扣券 $100</div>
+        <div class="ip-pts" style="color:#e65100" id="otp-t-val">折抵 NT$100</div>
+      </div>
+    </div>
+    <div class="otp-boxes">
+      <input class="otp-box" maxlength="1" id="t1" type="text" oninput="ot(this,'t2')">
+      <input class="otp-box" maxlength="1" id="t2" type="text" oninput="ot(this,'t3')">
+      <input class="otp-box" maxlength="1" id="t3" type="text" oninput="ot(this,'t4')">
+      <input class="otp-box" maxlength="1" id="t4" type="text" oninput="ot(this,'t5')">
+      <input class="otp-box" maxlength="1" id="t5" type="text" oninput="ot(this,'t6')">
+      <input class="otp-box" maxlength="1" id="t6" type="text" oninput="otEnd(this)">
+    </div>
+    <button class="btn btn-orange" onclick="confirmTicket()">確認核銷</button>
+    <p class="resend">沒收到？<span onclick="showToast('驗證碼已重新發送')">重新發送</span></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     S13: TICKET SUCCESS
+═══════════════════════════════════ -->
+<div class="screen" id="s-ticket-success">
+  <div class="sbar">
+    <button class="back" onclick="goTo('s-cart')">←</button>
+    <div class="title">核銷成功</div>
+    <div class="sp"></div>
+  </div>
+  <div class="stepper">
+    <div class="step done"><div class="dot">✓</div>輸入手機</div>
+    <div class="step-arr">›</div>
+    <div class="step done"><div class="dot">✓</div>選擇票券</div>
+    <div class="step-arr">›</div>
+    <div class="step done"><div class="dot">✓</div>驗證核銷</div>
+    <div class="step-arr">›</div>
+    <div class="step curr"><div class="dot">4</div>完成</div>
+  </div>
+  <div class="success-wrap">
+    <div class="success-anim">✅</div>
+    <div class="success-title">票券核銷成功！</div>
+    <div class="success-sub" id="t-success-msg"><strong>消費折扣券 $100</strong><br>已套用至本次訂單</div>
+    <div class="success-card" style="background:#fff3e0">
+      <div class="sc-lbl" style="color:#e65100">票券優惠</div>
+      <div class="sc-val" style="color:#e65100" id="t-success-val">折抵 NT$100</div>
+      <div class="sc-sub" style="color:#9e9e9e" id="t-success-time">2026/05/27 14:35</div>
+    </div>
+    <button class="btn btn-green" onclick="applyTicketToCart()">返回購物車</button>
+    <div style="height:12px"></div>
+    <button class="btn btn-gray" onclick="goTo('s-menu')">繼續點餐</button>
+  </div>
+</div>
+
+</div><!-- /device -->
+</div><!-- /stage -->
+
+<script>
+// ── State ──
+let mode = 'web';
+let phoneStr = '';
+let redeemPhoneStr = '';
+let ticketPhoneStr = '';
+const TOTAL_PTS = 1280;
+const REDEEM_ITEMS = [
+  { id:'ice',    rowId:'row-ice',    name:'香草冰淇淋', pts:200 },
+  { id:'juice',  rowId:'row-juice',  name:'鮮榨果汁',   pts:350 },
+  { id:'bento',  rowId:'row-bento',  name:'精緻便當',   pts:800 },
+  { id:'coffee', rowId:'row-coffee', name:'精品咖啡',  pts:1500 },
+];
+let itemQtys = { ice:0, juice:0, bento:0, coffee:0 };
+let selectedTicket = null;
+let fromScreen = 's-menu';
+
+// ── Mode ──
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-web').classList.toggle('active', m === 'web');
+  document.getElementById('btn-kiosk').classList.toggle('active', m === 'kiosk');
+  document.getElementById('device').classList.toggle('kiosk', m === 'kiosk');
+  document.getElementById('legend-panel').style.display = 'block';
+  document.getElementById('home-query-entry').style.display = m === 'kiosk' ? 'none' : 'block';
+  document.getElementById('home-pay-entry').style.display = m === 'kiosk' ? 'block' : 'none';
+  document.getElementById('legend-query-flow').style.display = m === 'kiosk' ? 'none' : 'block';
+  document.getElementById('legend-pay-flow').style.display = m === 'kiosk' ? 'block' : 'none';
+}
+
+// ── Navigation ──
+function goTo(id, param) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 's-order-detail' && param) loadOrderDetail(param);
+}
+
+// ── Phone Numpad 1 (query) ──
+function numTap(d) {
+  if (phoneStr.length >= 10) return;
+  phoneStr += d;
+  updatePhoneDisplay();
+}
+function numDel() { phoneStr = phoneStr.slice(0,-1); updatePhoneDisplay(); }
+function numClear() { phoneStr = ''; updatePhoneDisplay(); }
+function updatePhoneDisplay() {
+  document.getElementById('phone-num').textContent = phoneStr || '_';
+  document.getElementById('phone-confirm-btn').disabled = phoneStr.length !== 10;
+  if (phoneStr.length === 10) phoneConfirm();
+}
+function phoneConfirm() {
+  const fmt = phoneStr.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3');
+  document.getElementById('history-phone').textContent = fmt;
+  goTo('s-order-history');
+  phoneStr = '';
+  document.getElementById('phone-num').textContent = '_';
+  document.getElementById('phone-confirm-btn').disabled = true;
+}
+
+// ── Phone Numpad 2 (redeem) ──
+function numTap2(d) {
+  if (redeemPhoneStr.length >= 10) return;
+  redeemPhoneStr += d;
+  updateRedeemPhone();
+}
+function numDel2() { redeemPhoneStr = redeemPhoneStr.slice(0,-1); updateRedeemPhone(); }
+function numClear2() { redeemPhoneStr = ''; updateRedeemPhone(); }
+function updateRedeemPhone() {
+  document.getElementById('redeem-phone-num').textContent = redeemPhoneStr || '_';
+  document.getElementById('redeem-phone-btn').disabled = redeemPhoneStr.length !== 10;
+  if (redeemPhoneStr.length === 10) goToRedeemSelect();
+}
+function goToRedeemSelect() {
+  const fmt = redeemPhoneStr.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3') || '0912-345-678';
+  document.getElementById('rs-phone').textContent = fmt;
+  document.getElementById('otp-r-phone').textContent = fmt;
+  REDEEM_ITEMS.forEach(i => { itemQtys[i.id] = 0; });
+  REDEEM_ITEMS.forEach(i => {
+    const qel = document.getElementById('qty-'+i.id);
+    const mel = document.getElementById('minus-'+i.id);
+    if (qel) { qel.textContent = '0'; qel.classList.remove('active'); }
+    if (mel) mel.disabled = true;
+  });
+  document.querySelectorAll('.redeem-item').forEach(r => r.classList.remove('selected-row'));
+  document.getElementById('redeem-confirm-btn').disabled = true;
+  document.getElementById('redeem-confirm-btn').textContent = '請選擇要兌換的商品';
+  updatePtsCounter();
+  goTo('s-redeem-select');
+  redeemPhoneStr = '';
+  document.getElementById('redeem-phone-num').textContent = '_';
+  document.getElementById('redeem-phone-btn').disabled = true;
+}
+
+// ── Phone Numpad 3 (ticket) ──
+function numTap3(d) {
+  if (ticketPhoneStr.length >= 10) return;
+  ticketPhoneStr += d;
+  updateTicketPhone();
+}
+function numDel3() { ticketPhoneStr = ticketPhoneStr.slice(0,-1); updateTicketPhone(); }
+function numClear3() { ticketPhoneStr = ''; updateTicketPhone(); }
+function updateTicketPhone() {
+  document.getElementById('ticket-phone-num').textContent = ticketPhoneStr || '_';
+  document.getElementById('ticket-phone-btn').disabled = ticketPhoneStr.length !== 10;
+  if (ticketPhoneStr.length === 10) goToTicketList();
+}
+function goToTicketList() {
+  const fmt = ticketPhoneStr.replace(/(\d{4})(\d{3})(\d{3})/, '$1-$2-$3') || '0912-345-678';
+  document.getElementById('tl-phone').textContent = fmt;
+  document.getElementById('otp-t-phone').textContent = fmt;
+  goTo('s-ticket-list');
+  ticketPhoneStr = '';
+  document.getElementById('ticket-phone-num').textContent = '_';
+  document.getElementById('ticket-phone-btn').disabled = true;
+}
+
+// ── Back handlers ──
+function goBackFromPhone() {
+  goTo(document.getElementById('s-menu').classList.contains('active') || true ? 's-menu' : 's-cart');
+}
+function goBackFromRedeemSelect() { goTo('s-redeem-phone'); }
+function goBackFromTicketList() { goTo('s-ticket-phone'); }
+
+// ── Quantity Redeem ──
+const iconMap = { '香草冰淇淋':'🍦', '鮮榨果汁':'🧃', '精緻便當':'🍱', '精品咖啡':'☕' };
+
+function updatePtsCounter() {
+  const used = REDEEM_ITEMS.reduce((s, i) => s + itemQtys[i.id] * i.pts, 0);
+  const remain = TOTAL_PTS - used;
+  document.getElementById('pts-used-display').textContent = used.toLocaleString();
+  document.getElementById('pts-used-display').style.color = used > 0 ? '#e65100' : '#424242';
+  document.getElementById('pts-remain-display').textContent = remain.toLocaleString();
+  document.getElementById('pts-remain-display').style.color = remain >= 0 ? '#00897b' : '#c62828';
+
+  // Update +/− button states and stock text for each item
+  REDEEM_ITEMS.forEach(item => {
+    const plusBtn  = document.getElementById('plus-'+item.id);
+    const minusBtn = document.getElementById('minus-'+item.id);
+    const stockEl  = document.getElementById('stock-'+item.id);
+    const qty = itemQtys[item.id];
+    if (minusBtn) minusBtn.disabled = qty === 0;
+    if (plusBtn)  plusBtn.disabled  = remain < item.pts;
+    if (stockEl) {
+      const canAfford = remain >= item.pts || qty > 0;
+      stockEl.textContent = (remain < item.pts && qty === 0) ? '點數不足' : '庫存充足';
+      stockEl.style.color  = (remain < item.pts && qty === 0) ? '#e57373' : '#9e9e9e';
+    }
+  });
+
+  // Update confirm button
+  const totalQty = REDEEM_ITEMS.reduce((s, i) => s + itemQtys[i.id], 0);
+  const btn = document.getElementById('redeem-confirm-btn');
+  if (totalQty === 0) {
+    btn.disabled = true;
+    btn.textContent = '請選擇要兌換的商品';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `確認兌換 ${totalQty} 件（共 ${used.toLocaleString()} 點）`;
+  }
+}
+
+function adjustQty(id, delta) {
+  const item = REDEEM_ITEMS.find(i => i.id === id);
+  if (!item) return;
+  const current = itemQtys[id];
+  const newQty = current + delta;
+  if (newQty < 0) return;
+  const used = REDEEM_ITEMS.reduce((s, i) => s + itemQtys[i.id] * i.pts, 0);
+  const newUsed = used + delta * item.pts;
+  if (delta > 0 && newUsed > TOTAL_PTS) {
+    showToast('點數不足，無法增加數量');
+    return;
+  }
+  itemQtys[id] = newQty;
+  const qel = document.getElementById('qty-'+id);
+  if (qel) { qel.textContent = newQty; qel.classList.toggle('active', newQty > 0); }
+  document.getElementById(item.rowId).classList.toggle('selected-row', newQty > 0);
+  updatePtsCounter();
+}
+
+function goToRedeemOTP() {
+  const selectedList = REDEEM_ITEMS.filter(i => itemQtys[i.id] > 0);
+  if (selectedList.length === 0) return;
+  const totalQty  = selectedList.reduce((s, i) => s + itemQtys[i.id], 0);
+  const totalUsed = selectedList.reduce((s, i) => s + itemQtys[i.id] * i.pts, 0);
+  const names = selectedList.map(i => itemQtys[i.id] > 1 ? `${i.name}×${itemQtys[i.id]}` : i.name);
+  document.getElementById('otp-r-icon').textContent = iconMap[selectedList[0].name] || '🎁';
+  document.getElementById('otp-r-name').textContent = names.length === 1 ? names[0] : `${names[0]} 等 ${totalQty} 件`;
+  document.getElementById('otp-r-pts').textContent  = `⭐ 共 ${totalUsed.toLocaleString()} 點`;
+  document.getElementById('otp-r-count').textContent = names.length > 1 ? names.join('、') : '';
+  clearOtp(['r1','r2','r3','r4','r5','r6']);
+  goTo('s-redeem-otp');
+}
+
+function confirmRedeem() {
+  const code = ['r1','r2','r3','r4','r5','r6'].map(id => document.getElementById(id).value).join('');
+  if (code.length < 6) { showToast('請輸入完整 6 位驗證碼'); return; }
+  const selectedList = REDEEM_ITEMS.filter(i => itemQtys[i.id] > 0);
+  const totalQty  = selectedList.reduce((s, i) => s + itemQtys[i.id], 0);
+  const totalUsed = selectedList.reduce((s, i) => s + itemQtys[i.id] * i.pts, 0);
+  const remain    = TOTAL_PTS - totalUsed;
+  const names = selectedList.map(i => itemQtys[i.id] > 1 ? `${i.name}×${itemQtys[i.id]}` : i.name);
+  document.getElementById('r-success-msg').innerHTML =
+    names.length === 1
+      ? `<strong>${names[0]}</strong> 已加入訂單`
+      : `<strong>${names.join('、')}</strong><br>共 ${totalQty} 件已加入訂單`;
+  document.getElementById('r-success-pts').textContent    = `-${totalUsed.toLocaleString()} 點`;
+  document.getElementById('r-success-remain').textContent = `剩餘：${remain.toLocaleString()} 點`;
+  goTo('s-redeem-success');
+}
+
+function applyRedeemToCart() {
+  const selectedList = REDEEM_ITEMS.filter(i => itemQtys[i.id] > 0);
+  const totalQty = selectedList.reduce((s, i) => s + itemQtys[i.id], 0);
+  const names = selectedList.map(i => itemQtys[i.id] > 1 ? `${i.name}×${itemQtys[i.id]}` : i.name);
+  document.getElementById('redeemed-item-show').style.display = 'block';
+  document.getElementById('cart-redeemed-name').textContent =
+    names.length === 1 ? names[0] : `兌換商品 × ${totalQty} 件`;
+  document.getElementById('cart-redeem-row').style.display = 'flex';
+  goTo('s-cart');
+}
+
+// ── Ticket ──
+function startTicket(name, val, exp) {
+  selectedTicket = { name, val, exp };
+  document.getElementById('otp-t-name').textContent = name;
+  document.getElementById('otp-t-val').textContent = val;
+  clearOtp(['t1','t2','t3','t4','t5','t6']);
+  goTo('s-ticket-otp');
+}
+function confirmTicket() {
+  const code = ['t1','t2','t3','t4','t5','t6'].map(id => document.getElementById(id).value).join('');
+  if (code.length < 6) { showToast('請輸入完整 6 位驗證碼'); return; }
+  const now = new Date();
+  const ts = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('t-success-msg').innerHTML = `<strong>${selectedTicket.name}</strong><br>已套用至本次訂單`;
+  document.getElementById('t-success-val').textContent = selectedTicket.val;
+  document.getElementById('t-success-time').textContent = ts;
+  goTo('s-ticket-success');
+}
+function applyTicketToCart() {
+  document.getElementById('ticket-discount-show').style.display = 'block';
+  document.getElementById('cart-ticket-chip').textContent = `🎟️ ${selectedTicket?.name || '票券'} 折扣`;
+  document.getElementById('cart-ticket-row').style.display = 'flex';
+  document.getElementById('cart-total').textContent = '$540';
+  goTo('s-cart');
+}
+
+// ── Order Detail ──
+const orders = {
+  od1: { no:'#A20260524001', dt:'2026年5月24日 12:43', time:'2026/05/24 12:43', type:'外帶自取', pay:'LINE Pay', items:[{n:'鮮魚握壽司 × 2',p:'$320'},{n:'味噌湯',p:'$60'},{n:'外帶費',p:'$40'}], total:'$420', pts:'42 點', tags:'<span class="tag tag-green">✅ 付款完成</span><span class="tag tag-blue" style="margin-left:4px">外帶</span>' },
+  od2: { no:'#A20260520003', dt:'2026年5月20日 19:12', time:'2026/05/20 19:12', type:'內用', pay:'信用卡', items:[{n:'炸雞便當',p:'$250'},{n:'珍珠奶茶',p:'$65'},{n:'汽水',p:'$35'}], total:'$350', pts:'35 點', tags:'<span class="tag tag-green">✅ 付款完成</span><span class="tag tag-blue" style="margin-left:4px">內用</span>' },
+  od3: { no:'#A20260515007', dt:'2026年5月15日 13:05', time:'2026/05/15 13:05', type:'外帶自取', pay:'街口支付', items:[{n:'特級漢堡套餐',p:'$180'}], total:'$180', pts:'18 點', tags:'<span class="tag tag-green">✅ 付款完成</span><span class="tag tag-blue" style="margin-left:4px">外帶</span>' },
+  od4: { no:'#A20260422005', dt:'2026年4月22日 12:15', time:'2026/04/22 12:15', type:'內用', pay:'點數兌換', items:[{n:'香草冰淇淋（點數兌換）',p:'$0'}], total:'$0', pts:'-200 點', tags:'<span class="tag tag-blue">點數兌換</span>' },
+  od5: { no:'#A20260415011', dt:'2026年4月15日 18:30', time:'2026/04/15 18:30', type:'內用', pay:'LINE Pay + 票券', items:[{n:'套餐 × 2',p:'$780'},{n:'消費折扣券折抵',p:'-$100'}], total:'$680', pts:'58 點', tags:'<span class="tag tag-green">✅ 付款完成</span><span class="tag tag-orange" style="margin-left:4px">電子票券</span>' },
+};
+function loadOrderDetail(id) {
+  const d = orders[id]; if (!d) return;
+  document.getElementById('od-no').textContent = `訂單編號：${d.no}`;
+  document.getElementById('od-dt').textContent = d.dt;
+  document.getElementById('od-tags').innerHTML = d.tags;
+  document.getElementById('od-time').textContent = d.time;
+  document.getElementById('od-type').textContent = d.type;
+  document.getElementById('od-pay').textContent = d.pay;
+  document.getElementById('od-items').innerHTML = d.items.map(i=>`<div class="item-row"><span class="iname">${i.n}</span><span class="iprice">${i.p}</span></div>`).join('');
+  document.getElementById('od-total').textContent = d.total;
+  document.getElementById('od-pts-txt').innerHTML = `本次消費累積 / 扣除 <strong>${d.pts}</strong>`;
+}
+
+// ── OTP helpers ──
+function ot(el, nid) { el.classList.toggle('filled', !!el.value); if (el.value) document.getElementById(nid)?.focus(); }
+function otEnd(el) { el.classList.toggle('filled', !!el.value); }
+function clearOtp(ids) { ids.forEach(id => { const el=document.getElementById(id); if(el){el.value='';el.classList.remove('filled');} }); }
+
+// ── Toast ──
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.querySelector('.screen.active').appendChild(t);
+  setTimeout(()=>t.remove(), 2500);
+}
+
+// init
+setMode('web');
+</script>
+</body>
+</html>
