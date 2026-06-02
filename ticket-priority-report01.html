@@ -36,7 +36,6 @@
     margin: 0 auto;
   }
 
-  /* Header */
   .report-header {
     border-left: 4px solid var(--accent);
     padding-left: 20px;
@@ -62,10 +61,7 @@
     color: var(--text-muted);
   }
 
-  /* Section */
-  .section {
-    margin-bottom: 44px;
-  }
+  .section { margin-bottom: 44px; }
   .section-title {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
@@ -84,7 +80,6 @@
     background: var(--border);
   }
 
-  /* Summary cards */
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -117,9 +112,7 @@
   .c-blue { color: var(--accent); }
   .c-orange { color: var(--accent2); }
   .c-green { color: var(--accent3); }
-  .c-red { color: var(--danger); }
 
-  /* Priority legend */
   .legend {
     display: flex;
     gap: 20px;
@@ -133,25 +126,13 @@
     font-size: 12px;
     color: var(--text-muted);
   }
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .dot-p1 { background: var(--p1); }
   .dot-p2 { background: var(--p2); }
   .dot-p3 { background: var(--p3); }
 
-  /* Main table */
-  .ticket-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  .ticket-table thead tr {
-    border-bottom: 2px solid var(--border);
-  }
+  .ticket-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ticket-table thead tr { border-bottom: 2px solid var(--border); }
   .ticket-table th {
     text-align: left;
     padding: 10px 14px;
@@ -165,13 +146,8 @@
     border-bottom: 1px solid var(--border);
     transition: background 0.15s;
   }
-  .ticket-table tbody tr:hover {
-    background: var(--surface);
-  }
-  .ticket-table td {
-    padding: 13px 14px;
-    vertical-align: top;
-  }
+  .ticket-table tbody tr:hover { background: var(--surface); }
+  .ticket-table td { padding: 13px 14px; vertical-align: top; }
 
   .ticket-id {
     font-family: 'IBM Plex Mono', monospace;
@@ -179,15 +155,8 @@
     color: var(--text-muted);
     white-space: nowrap;
   }
-  .ticket-name {
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 3px;
-  }
-  .ticket-source {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
+  .ticket-name { font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .ticket-source { font-size: 11px; color: var(--text-muted); }
 
   .badge {
     display: inline-block;
@@ -213,43 +182,13 @@
     margin-bottom: 3px;
   }
 
-  .readiness {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-  }
-  .bar {
-    width: 16px;
-    height: 8px;
-    border-radius: 2px;
-  }
+  .readiness { display: flex; gap: 3px; align-items: center; }
+  .bar { width: 16px; height: 8px; border-radius: 2px; }
   .bar-fill { background: var(--accent3); }
   .bar-half { background: var(--accent2); }
   .bar-empty { background: var(--border); }
 
-  /* Gap list */
-  .gap-list {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .gap-list li {
-    list-style: none;
-    padding-left: 14px;
-    position: relative;
-    margin-bottom: 2px;
-  }
-  .gap-list li::before {
-    content: '·';
-    position: absolute;
-    left: 4px;
-  }
-
-  /* Allocation section */
-  .alloc-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
+  .alloc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .alloc-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -266,11 +205,7 @@
   .alloc-card .phase-p1 { color: var(--p1); }
   .alloc-card .phase-p2 { color: var(--p2); }
   .alloc-card .phase-p3 { color: var(--p3); }
-  .alloc-card .sprint {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-  }
+  .alloc-card .sprint { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
   .alloc-item {
     display: flex;
     justify-content: space-between;
@@ -280,10 +215,7 @@
     gap: 10px;
   }
   .alloc-item:last-child { border-bottom: none; }
-  .alloc-item .name {
-    font-size: 12px;
-    flex: 1;
-  }
+  .alloc-item .name { font-size: 12px; flex: 1; }
   .alloc-item .effort {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -291,12 +223,7 @@
     white-space: nowrap;
   }
 
-  /* Risk */
-  .risk-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  .risk-list { display: flex; flex-direction: column; gap: 10px; }
   .risk-item {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -307,32 +234,9 @@
     gap: 14px;
     align-items: flex-start;
   }
-  .risk-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  .risk-content .title {
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-  .risk-content .desc {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  /* Footer */
-  .footer {
-    margin-top: 48px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--text-muted);
-    display: flex;
-    justify-content: space-between;
-    font-family: 'IBM Plex Mono', monospace;
-  }
+  .risk-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+  .risk-content .title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .risk-content .desc { font-size: 12px; color: var(--text-muted); }
 
   .note-block {
     background: rgba(79,142,247,0.07);
@@ -344,23 +248,45 @@
     margin-bottom: 20px;
   }
   .note-block strong { color: var(--accent); }
+
+  .new-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(82,214,138,0.15);
+    color: var(--accent3);
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+  }
+
+  .footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace;
+  }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="report-header">
-  <div class="report-meta">Cashier New Feature · 開發資源配置報告 · 2026.06.01</div>
+  <div class="report-meta">Cashier New Feature · 開發資源配置報告 · 2026.06.02</div>
   <div class="report-title">Backlog Ticket 效益評估<br>與優先順序建議</div>
-  <div class="report-sub">受眾：開發主管 ／ 製作：PM Amber ／ 涵蓋 CNF / CP 共 10 張 Ticket</div>
+  <div class="report-sub">受眾：開發主管 ／ 製作：PM Amber ／ 涵蓋 CNF / CP 共 11 張 Ticket</div>
 </div>
 
-<!-- Summary -->
 <div class="summary-grid">
   <div class="summary-card">
     <div class="label">分析 Ticket 數</div>
-    <div class="value c-blue">10</div>
-    <div class="desc">CNF × 9 ／ CP × 1</div>
+    <div class="value c-blue">11</div>
+    <div class="desc">CNF × 10 ／ CP × 1</div>
   </div>
   <div class="summary-card">
     <div class="label">可直接進開發</div>
@@ -369,12 +295,11 @@
   </div>
   <div class="summary-card">
     <div class="label">需補件後才能估工</div>
-    <div class="value c-orange">9</div>
+    <div class="value c-orange">10</div>
     <div class="desc">完成條件或範圍仍有缺口</div>
   </div>
 </div>
 
-<!-- Main Ticket Table -->
 <div class="section">
   <div class="section-title">Ticket 總覽與優先度</div>
 
@@ -390,7 +315,7 @@
         <th style="width:90px">Ticket</th>
         <th>功能名稱 ／ 需求來源</th>
         <th style="width:70px">優先度</th>
-        <th style="width:100px">類別</th>
+        <th style="width:110px">類別</th>
         <th>核心效益</th>
         <th style="width:90px">需求完整度</th>
       </tr>
@@ -408,10 +333,7 @@
         <td>全通路自動封單（Kiosk/Web/POS），防止颱風/公休日產生無效訂單與退款糾紛</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-fill"></div>
             <span style="font-size:11px;color:var(--accent3);margin-left:5px">完整</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">PRD + FigJam + Figma 已備</div>
@@ -428,10 +350,7 @@
         <td>支援現金/信用卡/LINE Pay/全支付/台灣Pay，擴大設備適用場景，直接影響硬體銷售競爭力</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-half"></div>
             <span style="font-size:11px;color:var(--accent2);margin-left:5px">高</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">情境文件完整，部分細節待確認</div>
@@ -448,10 +367,7 @@
         <td>松屋大客戶指定，現行透過 LINE Pay 錢包繞路支付，分離一卡通可改善會計對帳效率</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-half"></div>
             <span style="font-size:11px;color:var(--accent2);margin-left:5px">高</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">測試帳號齊全，完成條件待補</div>
@@ -470,10 +386,7 @@
         <td>符合條件自動觸發贈品，減少店員介入，提升促銷執行率與消費體驗</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--accent2);margin-left:5px">中</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">三方案未收斂，需 PM 決策</div>
@@ -490,10 +403,7 @@
         <td>店家可自設滿額 Coupon 規則並列印，三端同步，提升回購率與顧客黏著度</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--accent2);margin-left:5px">中</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">有規劃文件，邊界條件待補</div>
@@ -510,10 +420,7 @@
         <td>客人臨時改飲料規格時店員可直接編輯，不需重新建單；廚房出單邏輯已有討論記錄</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--accent2);margin-left:5px">中</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">規劃邏輯清楚，完成條件未補</div>
@@ -530,13 +437,27 @@
         <td>解決先到店付款再製餐場景的流程斷點，但需同步建立防棄單機制（手機驗證、黑名單等）</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--accent2);margin-left:5px">中</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">防棄單方案未收斂，需 PM 確認範圍</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="ticket-id">CNF-1392 <span class="new-badge">NEW</span></td>
+        <td>
+          <div class="ticket-name">Kiosk 優化點餐指引</div>
+          <div class="ticket-source">內部改善需求</div>
+        </td>
+        <td><span class="badge badge-p2">P2</span></td>
+        <td><span class="tag">Kiosk</span></td>
+        <td>操作卡住 30 秒自動跳出提示 + 每頁語音輔助說明，降低高齡或首次使用者卡住率，減少店員介入頻率</td>
+        <td>
+          <div class="readiness">
+            <div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div><div class="bar bar-empty"></div>
+            <span style="font-size:11px;color:var(--p3);margin-left:5px">低</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">方向明確，語音規格與文案未定</div>
         </td>
       </tr>
 
@@ -552,10 +473,7 @@
         <td>常客透過電話查詢歷史訂單快速重點，加速翻桌效率；需整合會員系統</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--p3);margin-left:5px">低</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">顯示邏輯未定，完成條件空白</div>
@@ -572,10 +490,7 @@
         <td>原物料每日固定到貨量自動套用預設值，免除每日手動重設，降低超賣風險</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--p3);margin-left:5px">低</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">需求清楚但規格未展開</div>
@@ -592,10 +507,7 @@
         <td>處理環保杯折扣退差價場景，讓店員可在 POS 直接操作負數訂單，不需重新點單</td>
         <td>
           <div class="readiness">
-            <div class="bar bar-fill"></div>
-            <div class="bar bar-half"></div>
-            <div class="bar bar-empty"></div>
-            <div class="bar bar-empty"></div>
+            <div class="bar bar-fill"></div><div class="bar bar-half"></div><div class="bar bar-empty"></div><div class="bar bar-empty"></div>
             <span style="font-size:11px;color:var(--p3);margin-left:5px">低</span>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px">場景單一，邊界情境未定義</div>
@@ -647,6 +559,10 @@
         <div class="name">CNF-145 下單後出單</div>
         <div class="effort">中（防棄單待定）</div>
       </div>
+      <div class="alloc-item">
+        <div class="name">CNF-1392 點餐指引</div>
+        <div class="effort">小～中</div>
+      </div>
     </div>
     <div class="alloc-card">
       <div class="phase phase-p3">▶ P3 — 待資源評估</div>
@@ -667,7 +583,7 @@
   </div>
 </div>
 
-<!-- Gaps / Risks -->
+<!-- Gaps -->
 <div class="section">
   <div class="section-title">補件優先清單（P2/P3 票件）</div>
   <div class="risk-list">
@@ -686,10 +602,17 @@
       </div>
     </div>
     <div class="risk-item">
+      <div class="risk-icon">⚠️</div>
+      <div class="risk-content">
+        <div class="title">CNF-1392 點餐指引 — 語音規格未定義</div>
+        <div class="desc">需確認語音內容由誰提供／錄製、支援語系（中文/英文？）、提示訊息的觸發規則與文案，以及是否需要 Portal 後台開關，才能進入設計與開發。</div>
+      </div>
+    </div>
+    <div class="risk-item">
       <div class="risk-icon">📝</div>
       <div class="risk-content">
         <div class="title">CNF-104 / CNF-99 — 完成條件空白</div>
-        <div class="desc">兩張票的做法方向已有，但正式完成條件欄位尚未填寫，建議在進 Sprint 前由 PM 補上測項，避免開發完成後驗收標準不明確。</div>
+        <div class="desc">兩張票的做法方向已有，但正式完成條件欄位尚未填寫，建議在進 Sprint 前由 PM 補上測項，避免驗收標準不明確。</div>
       </div>
     </div>
     <div class="risk-item">
@@ -703,8 +626,8 @@
 </div>
 
 <div class="footer">
-  <span>CASHIER TECH · PM Amber · 2026.06.01</span>
-  <span>涵蓋 CNF × 9 ／ CP × 1 共 10 張 Ticket</span>
+  <span>CASHIER TECH · PM Amber · 2026.06.02</span>
+  <span>涵蓋 CNF × 10 ／ CP × 1 共 11 張 Ticket</span>
 </div>
 
 </body>
