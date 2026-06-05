@@ -1101,6 +1101,78 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-seri
 .kiosk-ov.kbd .kov-kbd-confirm { background: #3DAAA0; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .kiosk-ov.kbd .kov-kbd-confirm:disabled { background: #B2DFDB; cursor: not-allowed; }
 
+/* ════════════════════════════
+   我的點數 Drawer
+════════════════════════════ */
+.pts-drawer-overlay {
+  position: absolute; inset: 0; z-index: 60;
+  background: #fff; display: none; flex-direction: column;
+}
+.pts-drawer-overlay.visible { display: flex; }
+.pts-drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid #E8E8E8;
+}
+.pts-drawer-title { font-size: 16px; font-weight: 800; color: #1A1A1A; }
+.pts-drawer-close {
+  width: 28px; height: 28px; border-radius: 50%; background: #f5f5f5;
+  border: none; font-size: 16px; cursor: pointer; color: #757575;
+  display: flex; align-items: center; justify-content: center;
+}
+.pts-drawer-subnav { display: flex; border-bottom: 1px solid #E8E8E8; }
+.pts-drawer-subtab {
+  padding: 10px 16px; font-size: 13px; font-weight: 700;
+  color: #3DAAA0; border-bottom: 2px solid #3DAAA0; cursor: pointer;
+}
+.pts-drawer-card {
+  margin: 14px 16px; background: #F0FFFE; border-radius: 12px;
+  padding: 16px; text-align: center; border: 1px solid #B2DFDB;
+}
+.pts-drawer-card .pdc-label { font-size: 12px; color: #757575; margin-bottom: 8px; }
+.pts-drawer-card .pdc-val {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.pts-drawer-card .pdc-icon {
+  width: 24px; height: 24px; border-radius: 50%; background: #3DAAA0;
+  color: #fff; font-size: 12px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.pts-drawer-card .pdc-num { font-size: 32px; font-weight: 900; color: #1A1A1A; }
+.pts-drawer-tabs { display: flex; border-bottom: 1px solid #E8E8E8; margin: 0 16px; }
+.pts-drawer-tab {
+  flex: 1; text-align: center; padding: 10px 0; font-size: 13px; font-weight: 700;
+  color: #9e9e9e; cursor: pointer; border-bottom: 2px solid transparent;
+}
+.pts-drawer-tab.active { color: #3DAAA0; border-bottom-color: #3DAAA0; }
+.pts-drawer-list { flex: 1; overflow-y: auto; padding: 8px 16px; }
+.pts-drawer-empty { text-align: center; color: #9e9e9e; font-size: 13px; padding: 40px 0; }
+.pts-drawer-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid #F0F0F0;
+}
+.pts-drawer-row:last-child { border-bottom: none; }
+.pts-drawer-row .pdr-info { flex: 1; }
+.pts-drawer-row .pdr-type { font-size: 13px; font-weight: 700; color: #1A1A1A; }
+.pts-drawer-row .pdr-date { font-size: 11px; color: #9e9e9e; margin-top: 2px; }
+.pts-drawer-row .pdr-pts { display: flex; align-items: center; gap: 4px; }
+.pts-drawer-row .pdr-icon { width: 16px; height: 16px; border-radius: 50%; background: #3DAAA0; color: #fff; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.pts-drawer-row .pdr-num { font-size: 14px; font-weight: 800; color: #3DAAA0; }
+.pts-drawer-row .pdr-num.minus { color: #e53935; }
+.pts-drawer-section-title { font-size: 11px; font-weight: 700; color: #9e9e9e; padding: 10px 0 4px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* 會員點數 chip in order history */
+.member-pts-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #fff; border-bottom: 1px solid #E8E8E8;
+  cursor: pointer; transition: background .15s;
+}
+.member-pts-row:hover { background: #f9f9f9; }
+.member-pts-row .mpr-label { font-size: 13px; color: #757575; }
+.member-pts-row .mpr-val { display: flex; align-items: center; gap: 6px; }
+.member-pts-row .mpr-icon { width: 18px; height: 18px; border-radius: 50%; background: #3DAAA0; color: #fff; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.member-pts-row .mpr-num { font-size: 14px; font-weight: 800; color: #1A1A1A; }
+.member-pts-row .mpr-arr { font-size: 14px; color: #9e9e9e; }
+
 /* ── phone input wrap (redeem/ticket) ── */
 .phone-input-wrap { flex: 1; display: flex; flex-direction: column; padding: 24px 20px; }
 .phone-display { border: 2px solid #3DAAA0; border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; text-align: center; background: #f0fffe; }
@@ -1255,26 +1327,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-seri
 <!-- ═══════════════════════════════════
      S3: ORDER HISTORY
 ═══════════════════════════════════ -->
-<div class="screen" id="s-order-history">
+<div class="screen" id="s-order-history" style="position:relative">
   <div class="sbar">
     <button class="back" onclick="goTo('s-home')">←</button>
-    <div class="title">消費記錄</div>
+    <div class="title">訂單記錄</div>
     <div class="sp"></div>
   </div>
-  <div class="member-info-bar">
-    <div class="phone-label" id="history-phone">0912-345-678</div>
-    <div class="pts-badge">⭐ 1,280 點</div>
+  <!-- 手機查詢列 -->
+  <div class="query-phone-row" style="border-bottom:1px solid #E8E8E8">
+    <div class="query-phone-cc">TW +886</div>
+    <div class="query-phone-input" id="history-phone" style="border:none;font-size:14px;color:#1A1A1A;flex:1;padding:8px 0">0912345678</div>
+    <button class="query-btn" onclick="showToast('重新查詢中...')">查詢</button>
   </div>
-  <div class="no-redeem-note">
-    <div class="ni">ℹ️</div>
-    <div class="nt">
-      <strong>查詢模式</strong>：此頁僅顯示消費記錄與點數餘額。<br>
-      如需使用點數兌換商品或電子票券，請於<strong>點餐過程</strong>中操作。
+  <!-- 會員點數 chip -->
+  <div class="member-pts-row" onclick="openMyPtsDrawer()">
+    <span class="mpr-label">會員點數</span>
+    <div class="mpr-val">
+      <div class="mpr-icon">P</div>
+      <span class="mpr-num">291 點</span>
+      <span class="mpr-arr">›</span>
     </div>
   </div>
-  <div class="sec-label">最近消費紀錄</div>
+  <!-- 我的訂單 -->
+  <div class="sec-label" style="padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center">
+    <span>我的訂單</span>
+    <span style="font-size:11px;color:#3DAAA0;cursor:pointer">全部訂單</span>
+  </div>
   <div class="order-item" onclick="goTo('s-order-detail', 'od1')">
-    <div class="order-icon">🍣</div>
     <div class="order-info">
       <div class="date">2026/05/24 12:43 · 外帶</div>
       <div class="items">鮮魚握壽司 × 2、味噌湯</div>
@@ -1282,12 +1361,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-seri
     </div>
     <div class="order-right">
       <div class="amt">$420</div>
-      <div class="pts">+42 點</div>
     </div>
   </div>
   <div class="dv"></div>
   <div class="order-item" onclick="goTo('s-order-detail', 'od2')">
-    <div class="order-icon">🍱</div>
     <div class="order-info">
       <div class="date">2026/05/20 19:12 · 內用</div>
       <div class="items">炸雞便當、飲料 × 2</div>
@@ -1295,12 +1372,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-seri
     </div>
     <div class="order-right">
       <div class="amt">$350</div>
-      <div class="pts">+35 點</div>
     </div>
   </div>
   <div class="dv"></div>
   <div class="order-item" onclick="goTo('s-order-detail', 'od3')">
-    <div class="order-icon">🍔</div>
     <div class="order-info">
       <div class="date">2026/05/15 13:05 · 外帶自取</div>
       <div class="items">特級漢堡套餐</div>
@@ -1308,33 +1383,94 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-seri
     </div>
     <div class="order-right">
       <div class="amt">$180</div>
-      <div class="pts">+18 點</div>
     </div>
   </div>
-  <div class="dv"></div>
-  <div class="order-item" onclick="goTo('s-order-detail', 'od4')">
-    <div class="order-icon">⭐</div>
-    <div class="order-info">
-      <div class="date">2026/04/22 12:15 · 內用</div>
-      <div class="items">點數兌換：香草冰淇淋</div>
-      <div class="sub" style="margin-top:4px"><span class="tag tag-blue">點數兌換</span></div>
+
+  <!-- 我的點數 抽屜 overlay -->
+  <div class="pts-drawer-overlay" id="my-pts-drawer">
+    <div class="pts-drawer-header">
+      <div class="pts-drawer-title">我的點數</div>
+      <button class="pts-drawer-close" onclick="closeMyPtsDrawer()">×</button>
     </div>
-    <div class="order-right">
-      <div class="amt">$0</div>
-      <div class="pts">-200 點</div>
+    <div class="pts-drawer-subnav">
+      <div class="pts-drawer-subtab">查詢點數</div>
     </div>
-  </div>
-  <div class="dv"></div>
-  <div class="order-item" onclick="goTo('s-order-detail', 'od5')">
-    <div class="order-icon">🎟️</div>
-    <div class="order-info">
-      <div class="date">2026/04/15 18:30 · 內用</div>
-      <div class="items">消費折扣券 $100 已核銷</div>
-      <div class="sub" style="margin-top:4px"><span class="tag tag-orange">電子票券</span></div>
+    <div class="pts-drawer-card">
+      <div class="pdc-label">目前可使用點數</div>
+      <div class="pdc-val">
+        <div class="pdc-icon">P</div>
+        <div class="pdc-num">291</div>
+      </div>
     </div>
-    <div class="order-right">
-      <div class="amt">$680</div>
-      <div class="pts">+58 點</div>
+    <div class="pts-drawer-tabs">
+      <div class="pts-drawer-tab active" id="ptab-earn" onclick="switchPtsTab('earn')">獲得記錄</div>
+      <div class="pts-drawer-tab" id="ptab-use" onclick="switchPtsTab('use')">使用記錄</div>
+    </div>
+    <div class="pts-drawer-list" id="pts-earn-list">
+      <div class="pts-drawer-row">
+        <div class="pdr-info">
+          <div class="pdr-type">集點</div>
+          <div class="pdr-date">2026/05/24 · #A20260524001</div>
+        </div>
+        <div class="pdr-pts">
+          <div class="pdr-icon">P</div>
+          <div class="pdr-num">+42</div>
+        </div>
+      </div>
+      <div class="pts-drawer-row">
+        <div class="pdr-info">
+          <div class="pdr-type">集點</div>
+          <div class="pdr-date">2026/05/20 · #A20260520003</div>
+        </div>
+        <div class="pdr-pts">
+          <div class="pdr-icon">P</div>
+          <div class="pdr-num">+35</div>
+        </div>
+      </div>
+      <div class="pts-drawer-row">
+        <div class="pdr-info">
+          <div class="pdr-type">集點</div>
+          <div class="pdr-date">2026/05/15 · #A20260515007</div>
+        </div>
+        <div class="pdr-pts">
+          <div class="pdr-icon">P</div>
+          <div class="pdr-num">+18</div>
+        </div>
+      </div>
+      <div class="pts-drawer-row">
+        <div class="pdr-info">
+          <div class="pdr-type">集點</div>
+          <div class="pdr-date">2026/04/15 · #A20260415011</div>
+        </div>
+        <div class="pdr-pts">
+          <div class="pdr-icon">P</div>
+          <div class="pdr-num">+58</div>
+        </div>
+      </div>
+    </div>
+    <div class="pts-drawer-list" id="pts-use-list" style="display:none">
+      <div class="pts-drawer-section-title">獲得的點數</div>
+      <div class="pts-drawer-row">
+        <div class="pdr-info">
+          <div class="pdr-type">集點</div>
+          <div class="pdr-date">2026/05/24 · #A20260524001</div>
+        </div>
+        <div class="pdr-pts">
+          <div class="pdr-icon">P</div>
+          <div class="pdr-num">+42</div>
+        </div>
+      </div>
+      <div class="pts-drawer-section-title">消耗的點數</div>
+      <div class="pts-drawer-row">
+        <div class="pdr-info">
+          <div class="pdr-type">點數兌換</div>
+          <div class="pdr-date">2026/04/22 · #A20260422005</div>
+        </div>
+        <div class="pdr-pts">
+          <div class="pdr-icon" style="background:#e53935">P</div>
+          <div class="pdr-num minus">-200</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -3008,6 +3144,20 @@ function goTo(id, param) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 's-order-detail' && param) loadOrderDetail(param);
+}
+
+// ── 我的點數 抽屜 ──
+function openMyPtsDrawer() {
+  document.getElementById('my-pts-drawer').classList.add('visible');
+}
+function closeMyPtsDrawer() {
+  document.getElementById('my-pts-drawer').classList.remove('visible');
+}
+function switchPtsTab(tab) {
+  document.getElementById('ptab-earn').classList.toggle('active', tab === 'earn');
+  document.getElementById('ptab-use').classList.toggle('active', tab === 'use');
+  document.getElementById('pts-earn-list').style.display = tab === 'earn' ? 'block' : 'none';
+  document.getElementById('pts-use-list').style.display = tab === 'use' ? 'block' : 'none';
 }
 
 // ── Kiosk menu sidebar ──
