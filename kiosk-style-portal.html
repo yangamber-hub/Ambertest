@@ -828,11 +828,14 @@ function updateRowSpanVisibility() {
 
 function updateCategoryDep() {
   const isByCategory = settings.menuDisplay === 'BY_CATEGORY';
-  const row = document.getElementById('sr-categorySettings');
-  if (row) {
-    // must also respect V2 visibility
-    row.classList.toggle('visible', isByCategory && version === 'V3');
-  }
+  // 各類別顯示設定：V3 + 依類別才顯示
+  const catRow = document.getElementById('sr-categorySettings');
+  if (catRow) catRow.classList.toggle('visible', isByCategory && version === 'V3');
+  // 依類別時，菜單品項顯示方式與菜單每列行數都不需要顯示
+  const distRow = document.getElementById('sr-menuItemDistribution');
+  if (distRow) distRow.style.display = isByCategory ? 'none' : '';
+  const spanRow = document.getElementById('sr-menuRowSpan');
+  if (spanRow) spanRow.style.display = (isByCategory || settings.menuItemDistribution !== 'FIX') ? 'none' : '';
 }
 
 function openCategoryModal() {
