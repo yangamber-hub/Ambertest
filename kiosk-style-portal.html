@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>菜單顯示樣式客製化 — Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+
+/* Nav */
+.topnav{background:#fff;border-bottom:1px solid #e8eaed;padding:0 28px;height:56px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.topnav .logo{font-weight:700;font-size:17px;color:#2563eb}
+.topnav .bc{font-size:13px;color:#9ca3af;display:flex;align-items:center;gap:6px}
+.topnav .bc span{color:#374151}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:460px 1fr;gap:20px;max-width:1440px;margin:24px auto;padding:0 28px 40px;align-items:start}
+
+/* Settings panel */
+.sp{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden}
+.sp-header{padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between}
+.sp-header h2{font-size:15px;font-weight:600;color:#111827}
+.badge{font-size:11px;background:#eff6ff;color:#2563eb;padding:3px 10px;border-radius:20px;font-weight:600}
+
+/* Version bar */
+.version-bar{padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #e5e7eb;background:#fafafa}
+.version-bar label{font-size:12px;font-weight:700;color:#374151}
+.ver-btns{display:flex;gap:0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.ver-btn{padding:6px 20px;border:none;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:#6b7280;transition:all .15s;border-right:1px solid #e5e7eb}
+.ver-btn:last-child{border-right:none}
+.ver-btn.active{background:#2563eb;color:#fff;font-weight:700}
+
+/* Section tabs */
+.stabs{display:flex;border-bottom:1px solid #e5e7eb;overflow-x:auto}
+.stab{flex-shrink:0;padding:9px 14px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:500;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap}
+.stab.active{color:#2563eb;border-bottom-color:#2563eb;font-weight:700;background:#fff}
+.stab:hover:not(.active){color:#374151}
+
+/* Tab panes */
+.tp{display:none;max-height:calc(100vh - 280px);overflow-y:auto}
+.tp.active{display:block}
+
+/* Section groups */
+.sg{padding:12px 20px 4px}
+.sg-label{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;margin:10px 0 4px}
+
+/* Setting row */
+.sr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f9fafb;gap:10px}
+.sr:last-child{border-bottom:none}
+.sr[data-v2-only]{display:none}
+.sr[data-v3-only]{display:none}
+.sr[data-paper-only]{display:none}
+.sr.visible{display:flex!important}
+
+.sl{flex:1;min-width:0}
+.sl .sn{font-size:12px;font-weight:500;color:#374151}
+.sl .sk{font-size:10px;color:#9ca3af;font-family:"SF Mono","Fira Code",monospace;margin-top:1px}
+.sl .sd{font-size:10px;color:#6b7280;margin-top:2px}
+
+/* Controls */
+.s-sel{font-size:12px;color:#374151;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;background:#fff;cursor:pointer;outline:none;flex-shrink:0;min-width:120px}
+.s-sel:focus{border-color:#93c5fd}
+.s-num{font-size:12px;color:#374151;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;background:#fff;outline:none;flex-shrink:0;width:80px;text-align:right}
+.s-num:focus{border-color:#93c5fd}
+
+/* Toggle */
+.tog{position:relative;display:inline-block;width:38px;height:20px;cursor:pointer;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tog-s{position:absolute;inset:0;background:#d1d5db;border-radius:10px;transition:background .2s}
+.tog-s::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog input:checked+.tog-s{background:#2563eb}
+.tog input:checked+.tog-s::before{transform:translateX(18px)}
+
+/* Color rows */
+.cr{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f9fafb}
+.cr:last-child{border-bottom:none}
+.cr[data-v2-only]{display:none}
+.cr[data-v3-only]{display:none}
+.cr[data-paper-only]{display:none}
+.cr.visible{display:flex!important}
+.cl{flex:1;min-width:0}
+.cl .cn{font-size:12px;font-weight:500;color:#374151}
+.cl .cv{font-size:10px;color:#9ca3af;font-family:"SF Mono","Fira Code",monospace;margin-top:1px}
+.csw{position:relative;width:52px;height:28px;border-radius:6px;border:1px solid #e5e7eb;overflow:hidden;cursor:pointer;flex-shrink:0}
+.csw::before{content:'';position:absolute;inset:0;background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);background-size:8px 8px;background-position:0 0,0 4px,4px -4px,-4px 0}
+.cswd{position:absolute;inset:0}
+.csw input[type="color"]{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
+.hex{font-size:10px;font-family:"SF Mono","Fira Code",monospace;color:#6b7280;border:none;background:transparent;width:52px;text-align:right;cursor:pointer;outline:none;flex-shrink:0}
+.hex:focus{background:#f3f4f6;border-radius:4px;padding:2px 4px;color:#111827}
+.opw{display:flex;flex-direction:column;gap:2px;width:100px;flex-shrink:0}
+.opl{font-size:10px;color:#9ca3af;display:flex;justify-content:space-between}
+.opl .ov{color:#374151;font-weight:600}
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:#e5e7eb;border-radius:2px;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:#2563eb;cursor:pointer;box-shadow:0 1px 3px rgba(37,99,235,.4)}
+
+/* Checkbox group */
+.ck-group{display:flex;gap:12px;flex-wrap:wrap;flex-shrink:0}
+.ck-item{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#374151}
+.ck-item input{cursor:pointer;width:14px;height:14px}
+
+/* Panel actions */
+.pa{padding:12px 20px 16px;display:flex;gap:8px;border-top:1px solid #f3f4f6}
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:none}
+.btn-p{background:#2563eb;color:#fff;flex:1}.btn-p:hover{background:#1d4ed8}
+.btn-s{background:#f3f4f6;color:#374151}.btn-s:hover{background:#e5e7eb}
+.btn-d{background:#fff1f2;color:#e11d48}.btn-d:hover{background:#ffe4e6}
+
+/* Disabled indicator */
+.dep-hidden{display:none!important}
+
+/* Preview panel */
+.pp{position:sticky;top:76px}
+.ph{background:#fff;border-radius:12px 12px 0 0;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f3f4f6;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ph h3{font-size:14px;font-weight:600;color:#374151;display:flex;align-items:center;gap:8px}
+.ph h3::before{content:'';width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block}
+.pv-tabs{display:flex;gap:5px}
+.pvt{padding:4px 11px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:#6b7280;transition:all .15s}
+.pvt.active{background:#eff6ff;color:#2563eb;border-color:#bfdbfe}
+.kframe{border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.15);min-height:560px;background:#272a3a}
+
+/* KIOSK screens */
+.ks{display:none;width:100%;min-height:560px;flex-direction:column}
+.ks.active{display:flex}
+
+/* Welcome */
+.wls{width:100%;min-height:560px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.wl-bg{position:absolute;inset:0;transition:background .2s}
+.wl-logo{font-size:44px;z-index:1;margin-bottom:10px}
+.wl-title{z-index:1;font-size:24px;font-weight:800;text-align:center;transition:color .2s;line-height:1.4}
+.wl-sub{z-index:1;font-size:13px;margin-top:6px;text-align:center;opacity:.7;transition:color .2s}
+.wl-btn{z-index:1;margin-top:36px;padding:13px 44px;border-radius:50px;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:background .2s,color .2s}
+
+/* Menu */
+.ms{width:100%;min-height:560px;display:none;flex-direction:column}
+.ms.active{display:flex}
+.ktb{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;transition:background .2s}
+.ktb .stn{font-size:15px;font-weight:700;transition:color .2s}
+.ktb .tbn{font-size:11px;padding:3px 9px;border-radius:20px;transition:background .2s,color .2s}
+.kcats{padding:0 10px 8px;display:flex;gap:5px;overflow-x:auto}
+.kcat{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:none;white-space:nowrap;transition:background .2s,color .2s}
+.kitems{flex:1;display:flex;flex-direction:column;gap:7px;padding:0 10px 10px}
+.ki-row{display:flex;gap:7px}
+.ki{border-radius:7px;overflow:hidden;cursor:pointer;transition:background .2s}
+.ki-img{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:20px;transition:background .2s}
+.ki-info{padding:5px 7px}
+.ki-name{font-size:10px;font-weight:600;transition:color .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ki-price{font-size:12px;font-weight:700;margin-top:1px;transition:color .2s}
+.ki-price::before{content:'NT$ ';font-size:8px}
+.kbottom{padding:9px 10px;display:flex;gap:7px;align-items:center;transition:background .2s}
+.kci{flex:1;font-size:11px;transition:color .2s}
+.ktot{font-size:16px;font-weight:700;transition:color .2s}
+.kobn{padding:9px 18px;border-radius:7px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:background .2s,color .2s}
+.kcbn{padding:9px 13px;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:background .2s,color .2s;opacity:.8}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:#fff;border-radius:14px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(12px);transition:transform .2s;overflow:hidden}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-head{padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:14px;font-weight:700;color:#111827}
+.modal-head .modal-sub{font-size:11px;color:#6b7280;margin-top:2px}
+.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:#f3f4f6;cursor:pointer;color:#6b7280;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.modal-close:hover{background:#e5e7eb}
+.modal-body{padding:8px 20px 12px;max-height:360px;overflow-y:auto}
+.cat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f9fafb;gap:12px}
+.cat-row:last-child{border-bottom:none}
+.cat-row .cat-name{font-size:13px;font-weight:500;color:#374151;flex:1}
+.cat-row .cat-badge{font-size:10px;color:#9ca3af;margin-top:1px}
+.cat-row .s-sel{min-width:130px}
+.modal-foot{padding:12px 20px;border-top:1px solid #f3f4f6;display:flex;gap:8px;justify-content:flex-end}
+
+/* Category settings button row */
+.cat-settings-row{display:none;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f9fafb;gap:10px}
+.cat-settings-row.visible{display:flex}
+.cat-settings-btn{padding:6px 14px;border-radius:7px;border:1px solid #2563eb;background:#eff6ff;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+.cat-settings-btn:hover{background:#dbeafe}
+.cat-settings-summary{font-size:10px;color:#9ca3af;margin-top:2px}
+
+/* Toast */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(14px);background:#111827;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="logo">Cashier Portal</div>
+  <div class="bc">商店設定 › <span>菜單顯示樣式</span></div>
+</nav>
+
+<div class="layout">
+
+<!-- ── Settings Panel ── -->
+<div class="sp">
+  <div class="sp-header">
+    <h2>版面格式設定</h2>
+    <span class="badge">KIOSK</span>
+  </div>
+
+  <!-- Version selector -->
+  <div class="version-bar">
+    <label>Kiosk 版本</label>
+    <div class="ver-btns">
+      <button class="ver-btn" id="vbtn-v2" onclick="setVersion('V2')">V2</button>
+      <button class="ver-btn active" id="vbtn-v3" onclick="setVersion('V3')">V3</button>
+    </div>
+  </div>
+
+  <!-- Section tabs -->
+  <div class="stabs">
+    <button class="stab active" onclick="switchTab('menu',this)">菜單頁</button>
+    <button class="stab" onclick="switchTab('color',this)">顏色</button>
+    <button class="stab" onclick="switchTab('welcome',this)">歡迎頁</button>
+    <button class="stab" onclick="switchTab('dining',this)">用餐類型</button>
+    <button class="stab" onclick="switchTab('others',this)">其他功能</button>
+  </div>
+
+  <!-- ─ 菜單頁 ─ -->
+  <div class="tp active" id="tab-menu">
+    <div class="sg">
+
+      <!-- V3 only -->
+      <div class="sr" data-v3-only id="sr-kioskMenuTemplate">
+        <div class="sl"><div class="sn">Kiosk 菜單模板</div><div class="sk">kioskMenuTemplate</div></div>
+        <select class="s-sel" onchange="onSel('kioskMenuTemplate',this.value);updatePaperVisibility()">
+          <option value="DEFAULT">預設（DEFAULT）</option>
+          <option value="PAPER">類紙本（PAPER）</option>
+        </select>
+      </div>
+
+      <!-- Common = 兩版都顯示 -->
+      <div class="sr" id="sr-menuCategoryDimension">
+        <div class="sl"><div class="sn">菜單類別顯示位置</div><div class="sk">menuCategoryDimension</div></div>
+        <select class="s-sel" onchange="onSel('menuCategoryDimension',this.value)">
+          <option value="TOP">TOP（上方橫排）</option>
+          <option value="LEFT">LEFT（左側直排）</option>
+        </select>
+      </div>
+
+      <div class="sr" id="sr-menuCategoryDisplayType">
+        <div class="sl"><div class="sn">菜單類別顯示類型</div><div class="sk">menuCategoryDisplayType</div></div>
+        <select class="s-sel" onchange="onSel('menuCategoryDisplayType',this.value)">
+          <option value="TEXT">TEXT（文字）</option>
+          <option value="IMAGE">IMAGE（圖文）</option>
+        </select>
+      </div>
+
+      <div class="sr" id="sr-menuCategoryImageAlpha">
+        <div class="sl"><div class="sn">菜單類別圖片透明度</div><div class="sk">menuCategoryImageAlpha</div></div>
+        <input class="s-num" type="number" min="0" max="1" step="0.1" value="1" onchange="onNum('menuCategoryImageAlpha',this.value)">
+      </div>
+
+      <!-- V3 only -->
+      <div class="sr" data-v3-only id="sr-menuDisplay">
+        <div class="sl"><div class="sn">菜單顯示</div><div class="sk">menuDisplay</div><div class="sd">預設 / 依類別（依類別可設定各類別參數）</div></div>
+        <select class="s-sel" id="sel-menuDisplay" onchange="onSel('menuDisplay',this.value);updateCategoryDep()">
+          <option value="DEFAULT">預設</option>
+          <option value="BY_CATEGORY">依類別</option>
+        </select>
+      </div>
+
+      <!-- V3 + 依類別時才顯示 -->
+      <div class="cat-settings-row" data-v3-only id="sr-categorySettings">
+        <div class="sl">
+          <div class="sn">各類別顯示設定</div>
+          <div class="sk">menuCategoryDisplaySettings</div>
+          <div class="cat-settings-summary" id="cat-settings-summary">尚未設定</div>
+        </div>
+        <button class="cat-settings-btn" onclick="openCategoryModal()">設定 →</button>
+      </div>
+
+      <!-- Common = 兩版都顯示 -->
+      <div class="sr" id="sr-menuItemDistribution">
+        <div class="sl"><div class="sn">菜單品項顯示方式</div><div class="sk">menuItemDistribution</div></div>
+        <select class="s-sel" onchange="onSel('menuItemDistribution',this.value);updateRowSpanVisibility()">
+          <option value="FIX">固定</option>
+          <option value="2/3/4">2/3/4</option>
+          <option value="2/3/3/4">2/3/3/4</option>
+          <option value="1/2/2/2">1/2/2/2</option>
+          <option value="2/4/4/4">2/4/4/4</option>
+          <option value="3/4/4/4">3/4/4/4</option>
+        </select>
+      </div>
+
+      <div class="sr" id="sr-menuRowSpan">
+        <div class="sl"><div class="sn">菜單每列行數</div><div class="sk">menuRowSpan</div><div class="sd">顯示方式為「固定」時有效：2、3、4</div></div>
+        <input class="s-num" type="number" min="2" max="4" step="1" value="3" onchange="onNum('menuRowSpan',this.value);updatePreview()">
+      </div>
+
+      <div class="sr" id="sr-menuItemTextDistribution">
+        <div class="sl"><div class="sn">菜單品項描述類型</div><div class="sk">menuItemTextDistribution</div></div>
+        <select class="s-sel" onchange="onSel('menuItemTextDistribution',this.value)">
+          <option value="TITLE">TITLE（僅名稱）</option>
+          <option value="FULL">FULL（名稱＋描述）</option>
+        </select>
+      </div>
+
+      <div class="sr" id="sr-isAlwaysShowMenuDetail">
+        <div class="sl"><div class="sn">展開商品內容</div><div class="sk">isAlwaysShowMenuDetail</div><div class="sd">點擊品項時直接展開明細</div></div>
+        <label class="tog"><input type="checkbox" onchange="onTog('isAlwaysShowMenuDetail',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-isQuantityEditable">
+        <div class="sl"><div class="sn">手動輸入商品數量</div><div class="sk">isQuantityEditable</div></div>
+        <label class="tog"><input type="checkbox" onchange="onTog('isQuantityEditable',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <!-- V2 + V3 -->
+      <div class="sr" data-v2-v3 id="sr-isShowOnBoarding">
+        <div class="sl"><div class="sn">點餐操作指引</div><div class="sk">isShowOnBoarding</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowOnBoarding" checked onchange="onTog('isShowOnBoarding',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" data-v2-v3 id="sr-isIdleGuideEnabled">
+        <div class="sl"><div class="sn">閒置指引</div><div class="sk">isIdleGuideEnabled</div><div class="sd">預設為關閉</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isIdleGuideEnabled" onchange="onTog('isIdleGuideEnabled',this.checked);updateIdleDep()"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr dep-hidden" data-v2-v3 id="sr-idleGuideSeconds">
+        <div class="sl"><div class="sn">閒置指引秒數</div><div class="sk">idleGuideSeconds</div><div class="sd">10 ~ 60 秒</div></div>
+        <input class="s-num" type="number" min="10" max="60" step="5" value="10" onchange="onNum('idleGuideSeconds',this.value)">
+      </div>
+
+      <!-- V3 + 類紙本 only -->
+      <div class="sr" data-paper-only id="sr-paperMenuTextSize">
+        <div class="sl"><div class="sn">文字尺寸</div><div class="sk">paperMenuTextSize</div><div class="sd">新菜單模板專用</div></div>
+        <select class="s-sel" onchange="onSel('paperMenuTextSize',this.value)">
+          <option value="SMALL">SMALL（小）</option>
+          <option value="MEDIUM" selected>MEDIUM（中）</option>
+          <option value="LARGE">LARGE（大）</option>
+        </select>
+      </div>
+
+      <div class="sr" data-paper-only id="sr-paperMenuSpacingSize">
+        <div class="sl"><div class="sn">文字間距</div><div class="sk">paperMenuSpacingSize</div><div class="sd">新菜單模板專用</div></div>
+        <select class="s-sel" onchange="onSel('paperMenuSpacingSize',this.value)">
+          <option value="SMALL">SMALL（小）</option>
+          <option value="MEDIUM" selected>MEDIUM（中）</option>
+          <option value="LARGE">LARGE（大）</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─ 顏色 ─ -->
+  <div class="tp" id="tab-color">
+    <div class="sg" id="color-rows"></div>
+  </div>
+
+  <!-- ─ 歡迎頁 ─ -->
+  <div class="tp" id="tab-welcome">
+    <div class="sg">
+
+      <div class="sr" id="sr-isShowWelcome">
+        <div class="sl"><div class="sn">顯示歡迎頁</div><div class="sk">isShowWelcome</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowWelcome" checked onchange="onTog('isShowWelcome',this.checked);updateWelcomeDep()"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-welcomeMode" style="display:none">
+        <div class="sl"><div class="sn">歡迎頁模式</div><div class="sd">點擊螢幕開始 / 點餐與付款按鈕 / 語系選擇</div></div>
+        <select class="s-sel" onchange="onSel('welcomeMode',this.value)">
+          <option value="TAP">點擊螢幕開始</option>
+          <option value="ORDER_PAY">點餐與付款按鈕</option>
+          <option value="LANGUAGE">語系選擇</option>
+        </select>
+      </div>
+
+      <div class="sr" id="sr-isShowWelcomeText" style="display:none">
+        <div class="sl"><div class="sn">歡迎文字設定</div><div class="sk">isShowWelcomeText</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowWelcomeText" checked onchange="onTog('isShowWelcomeText',this.checked);updatePreview()"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-welcomeMessagePositionY" style="display:none">
+        <div class="sl"><div class="sn">歡迎頁文字顯示位置</div><div class="sk">welcomeMessagePositionY</div></div>
+        <select class="s-sel" id="sel-welcomePos" onchange="onSel('welcomeMessagePositionY', posToVal(this.value))">
+          <option value="TOP">上（500）</option>
+          <option value="MID">中（1000）</option>
+          <option value="BOT" selected>下（1500）</option>
+        </select>
+      </div>
+
+      <div class="sr" id="sr-carouselInterval" style="display:none">
+        <div class="sl"><div class="sn">歡迎頁 / 橫幅廣告輪播間隔</div><div class="sk">carouselInterval</div><div class="sd">單位：秒</div></div>
+        <input class="s-num" type="number" min="3" max="60" step="1" value="10" onchange="onNum('carouselInterval',this.value)">
+      </div>
+
+      <div class="sr" id="sr-isShowOrderAndPayEntryInWelcome" style="display:none">
+        <div class="sl"><div class="sn">首頁顯示點餐與付款按鈕</div><div class="sk">isShowOrderAndPayEntryInWelcome</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowOrderAndPayEntryInWelcome" onchange="onTog('isShowOrderAndPayEntryInWelcome',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─ 用餐類型 ─ -->
+  <div class="tp" id="tab-dining">
+    <div class="sg">
+
+      <div class="sr" id="sr-isSeatEnabled">
+        <div class="sl"><div class="sn">啟用選擇座位</div><div class="sk">isSeatEnabled</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isSeatEnabled" checked onchange="onTog('isSeatEnabled',this.checked);updatePreview()"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-maxSeatLimitPerOrder">
+        <div class="sl"><div class="sn">每筆訂單座位數量限制</div><div class="sk">maxSeatLimitPerOrder</div><div class="sd">0 = 不限制</div></div>
+        <input class="s-num" type="number" min="0" max="50" step="1" value="0" onchange="onNum('maxSeatLimitPerOrder',this.value)">
+      </div>
+
+      <div class="sr" id="sr-skipDinningType">
+        <div class="sl"><div class="sn">不需選擇內用 / 外帶</div><div class="sk">skipDinningType</div></div>
+        <label class="tog"><input type="checkbox" id="tog-skipDinningType" onchange="onTog('skipDinningType',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-isInstantPayEnabled">
+        <div class="sl"><div class="sn">顯示付款按鈕</div><div class="sk">isInstantPayEnabled</div><div class="sd">用餐類型頁顯示付款快捷按鈕</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isInstantPayEnabled" onchange="onTog('isInstantPayEnabled',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" data-v3-only id="sr-isPreferMobilePay">
+        <div class="sl"><div class="sn">優先顯示手機付款功能</div><div class="sk">isPreferMobilePay</div></div>
+        <label class="tog"><input type="checkbox" onchange="onTog('isPreferMobilePay',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-languageDisplayPage">
+        <div class="sl"><div class="sn">語系選擇顯示頁面</div><div class="sk">languageDisplayPage</div><div class="sd">可複選顯示於哪些頁面</div></div>
+        <div class="ck-group">
+          <label class="ck-item"><input type="checkbox" id="ck-lang-dining" checked onchange="updateLangPages()">內用/外帶頁</label>
+          <label class="ck-item"><input type="checkbox" id="ck-lang-menu" onchange="updateLangPages()">點餐頁</label>
+        </div>
+      </div>
+
+      <div class="sr" id="sr-selectOrderKeyboard">
+        <div class="sl"><div class="sn">搜尋訂單頁鍵盤樣式</div><div class="sk">selectOrderKeyboard</div></div>
+        <select class="s-sel" onchange="onSel('selectOrderKeyboard',this.value)">
+          <option value="NUMBER">NUMBER（數字）</option>
+          <option value="PLUS_MINUS">PLUS_MINUS（加減）</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─ 其他功能 ─ -->
+  <div class="tp" id="tab-others">
+    <div class="sg">
+
+      <div class="sr" id="sr-loyaltyPointDisplay">
+        <div class="sl"><div class="sn">手機號碼集點提示</div><div class="sk">loyaltyPointDisplay</div></div>
+        <select class="s-sel" onchange="onSel('loyaltyPointDisplay',this.value)">
+          <option value="AFTER_PAY">付款後顯示</option>
+          <option value="BEFORE_PAY">付款前顯示</option>
+          <option value="NONE">不顯示</option>
+        </select>
+      </div>
+
+      <div class="sr" data-v3-only id="sr-isShowCashPayDirectly">
+        <div class="sl"><div class="sn">現金付款自動跳轉</div><div class="sk">isShowCashPayDirectly</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowCashPayDirectly" checked onchange="onTog('isShowCashPayDirectly',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" data-v2-only id="sr-isFaceEnabled">
+        <div class="sl"><div class="sn">啟用人臉辨識</div><div class="sk">isFaceEnabled</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isFaceEnabled" onchange="onTog('isFaceEnabled',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" data-v2-only id="sr-isShowCashPaymentConfirm">
+        <div class="sl"><div class="sn">現金結帳手動確認</div><div class="sk">isShowCashPaymentConfirm</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowCashPaymentConfirm" onchange="onTog('isShowCashPaymentConfirm',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" data-v2-only id="sr-isShowCartBeforePay">
+        <div class="sl"><div class="sn">結帳前顯示購物車</div><div class="sk">isShowCartBeforePay</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isShowCartBeforePay" checked onchange="onTog('isShowCartBeforePay',this.checked);updatePreview()"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" data-v2-only id="sr-isAttributeBrandImageEnable">
+        <div class="sl"><div class="sn">啟用屬性品牌圖片</div><div class="sk">isAttributeBrandImageEnable</div></div>
+        <label class="tog"><input type="checkbox" id="tog-isAttributeBrandImageEnable" onchange="onTog('isAttributeBrandImageEnable',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+      <div class="sr" id="sr-posDiscount">
+        <div class="sl"><div class="sn">POS 手動折扣快捷按鈕</div><div class="sk">percentOffList</div></div>
+        <label class="tog"><input type="checkbox" onchange="onTog('posDiscountEnabled',this.checked)"><span class="tog-s"></span></label>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="pa">
+    <button class="btn btn-s" onclick="resetDefaults()">重設預設</button>
+    <button class="btn btn-d" onclick="discardChanges()">捨棄變更</button>
+    <button class="btn btn-p" onclick="saveSettings()">儲存設定</button>
+  </div>
+</div>
+
+<!-- ── Preview Panel ── -->
+<div class="pp">
+  <div class="ph">
+    <h3>即時預覽</h3>
+    <div class="pv-tabs">
+      <button class="pvt active" onclick="switchPreview('welcome',this)">歡迎頁</button>
+      <button class="pvt" onclick="switchPreview('menu',this)">菜單頁</button>
+    </div>
+  </div>
+  <div class="kframe">
+
+    <div class="ks active" id="pv-welcome">
+      <div class="wls">
+        <div class="wl-bg" id="pvwbg"></div>
+        <div class="wl-logo">🍽️</div>
+        <div class="wl-title" id="pvwt">歡迎光臨<br>美食廣場 A館</div>
+        <div class="wl-sub" id="pvws">請觸碰螢幕開始點餐</div>
+        <button class="wl-btn" id="pvwb" onclick="switchPreview('menu',document.querySelectorAll('.pvt')[1])">觸碰開始</button>
+      </div>
+    </div>
+
+    <div class="ks" id="pv-menu">
+      <div class="ktb" id="pvtb">
+        <div class="stn" id="pvsn">美食廣場 A館</div>
+        <div class="tbn" id="pvbn">桌號 05</div>
+      </div>
+      <div class="kcats" id="pvcats">
+        <button class="kcat active-cat" id="cat-0">精選推薦</button>
+        <button class="kcat" id="cat-1">主食</button>
+        <button class="kcat" id="cat-2">小食</button>
+        <button class="kcat" id="cat-3">飲料</button>
+        <button class="kcat" id="cat-4">甜點</button>
+      </div>
+      <div class="kitems" id="pvitems"></div>
+      <div class="kbottom" id="pvbot">
+        <div class="kci" id="pvci">3 件商品</div>
+        <div class="ktot" id="pvtot">NT$560</div>
+        <button class="kobn" id="pvobn">確認下單</button>
+        <button class="kcbn" id="pvcbn">取消</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── Category Display Modal ── -->
+<div class="modal-overlay" id="cat-modal-overlay" onclick="onOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3>各類別顯示設定</h3>
+        <div class="modal-sub">每個類別可獨立設定品項顯示方式（暫不支援固定顯示）</div>
+      </div>
+      <button class="modal-close" onclick="closeCategoryModal()">✕</button>
+    </div>
+    <div class="modal-body" id="cat-modal-body">
+      <!-- rows injected by JS -->
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-s" onclick="closeCategoryModal()">取消</button>
+      <button class="btn btn-p" onclick="saveCategoryModal()">確認</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let version = 'V3';
+
+const DEFAULTS_COLOR = {
+  maColorPrimary:           {color:'#272A3A',opacity:1},
+  maColorSecondary:         {color:'#5BAEA3',opacity:1},
+  maColorBtnPrimary:        {color:'#E6E6E6',opacity:1},
+  maColorBtnSecondary:      {color:'#FFC400',opacity:1},
+  maColorBtnDisable:        {color:'#929CA3',opacity:1},
+  maColorTextDefault:       {color:'#FFFFFF',opacity:1},
+  maColorTextPrice:         {color:'#F6EF04',opacity:1},
+  maColorTextPrimary:       {color:'#747474',opacity:1},
+  maColorTextSecondary:     {color:'#FFFFFF',opacity:1},
+  maColorTertiary:          {color:'#FFC400',opacity:1},
+  maColorPaperMenuBackground:{color:'#FFF6EB',opacity:1},
+};
+
+// Color visibility rules per version
+// 'all' = always, 'v2' = V2 only, 'v3' = V3 only, 'paper' = V3 + paper template
+const COLOR_DEFS = [
+  {key:'maColorPrimary',      name:'主背景',       ver:'all'},
+  {key:'maColorSecondary',    name:'次要背景',      ver:'all'},
+  {key:'maColorBtnPrimary',   name:'主按鈕',        ver:'all'},
+  {key:'maColorBtnSecondary', name:'次要按鈕',      ver:'all'},
+  {key:'maColorBtnDisable',   name:'按鈕停用',      ver:'all'},
+  {key:'maColorTextDefault',  name:'預設文字',      ver:'all'},
+  {key:'maColorTextPrimary',  name:'主文字',        ver:'all'},
+  {key:'maColorTextSecondary',name:'次要文字',      ver:'all'},
+  {key:'maColorTextPrice',    name:'主要數字',      ver:'all'},
+  {key:'maColorTertiary',     name:'輔助顏色（自助結帳）', ver:'v2'},
+  {key:'maColorPaperMenuBackground', name:'菜單背景色（類紙本）', ver:'paper'},
+];
+
+let colorState = JSON.parse(JSON.stringify(DEFAULTS_COLOR));
+let savedColor  = JSON.parse(JSON.stringify(DEFAULTS_COLOR));
+
+let settings = {
+  version:'V3',
+  kioskMenuTemplate:'DEFAULT',
+  menuCategoryDimension:'TOP',
+  menuCategoryDisplayType:'TEXT',
+  menuCategoryImageAlpha:1,
+  menuDisplay:'DEFAULT',
+  menuItemDistribution:'FIX',
+  menuRowSpan:3,
+  menuItemTextDistribution:'TITLE',
+  isAlwaysShowMenuDetail:false,
+  isQuantityEditable:false,
+  isShowOnBoarding:true,
+  isIdleGuideEnabled:false,
+  idleGuideSeconds:10,
+  paperMenuTextSize:'MEDIUM',
+  paperMenuSpacingSize:'MEDIUM',
+  isShowWelcome:true,
+  welcomeMode:'TAP',
+  isShowWelcomeText:true,
+  welcomeMessagePositionY:1500,
+  carouselInterval:10,
+  isShowOrderAndPayEntryInWelcome:false,
+  isSeatEnabled:true,
+  maxSeatLimitPerOrder:0,
+  skipDinningType:false,
+  isInstantPayEnabled:false,
+  isPreferMobilePay:false,
+  languageDisplayPage:'DINING_TYPE',
+  selectOrderKeyboard:'NUMBER',
+  loyaltyPointDisplay:'AFTER_PAY',
+  isShowCashPayDirectly:true,
+  isFaceEnabled:false,
+  isShowCashPaymentConfirm:false,
+  isShowCartBeforePay:true,
+  isAttributeBrandImageEnable:false,
+  isShowStoreWaitingList:true,
+};
+let savedSettings = JSON.parse(JSON.stringify(settings));
+
+// ── Version switch ──
+function setVersion(v) {
+  version = v;
+  document.getElementById('vbtn-v2').classList.toggle('active', v==='V2');
+  document.getElementById('vbtn-v3').classList.toggle('active', v==='V3');
+  applyVersionVisibility();
+  renderColorRows();
+  updatePreview();
+}
+
+function applyVersionVisibility() {
+  // v2-only rows: show only in V2
+  document.querySelectorAll('[data-v2-only]').forEach(el => {
+    el.classList.toggle('visible', version==='V2');
+  });
+  // v3-only rows: show only in V3
+  document.querySelectorAll('[data-v3-only]').forEach(el => {
+    el.classList.toggle('visible', version==='V3');
+  });
+  // category settings row depends on BOTH version AND menuDisplay — must run AFTER v3-only loop
+  updateCategoryDep();
+  // menuRowSpan only relevant when distribution = FIX
+  updateRowSpanVisibility();
+  // v2-v3 rows (present in both V2 and V3): always show
+  document.querySelectorAll('[data-v2-v3]').forEach(el => {
+    el.classList.add('visible');
+  });
+  // paper-only: V3 + template=PAPER
+  updatePaperVisibility();
+}
+
+function updatePaperVisibility() {
+  const isPaper = version==='V3' && settings.kioskMenuTemplate==='PAPER';
+  document.querySelectorAll('[data-paper-only]').forEach(el => {
+    el.classList.toggle('visible', isPaper);
+  });
+}
+
+// ── Dependency visibility ──
+function updateIdleDep() {
+  const on = document.getElementById('tog-isIdleGuideEnabled').checked;
+  document.getElementById('sr-idleGuideSeconds').classList.toggle('dep-hidden', !on);
+}
+
+function updateWelcomeDep() {
+  const on = document.getElementById('tog-isShowWelcome').checked;
+  ['sr-welcomeMode','sr-isShowWelcomeText','sr-welcomeMessagePositionY','sr-carouselInterval','sr-isShowOrderAndPayEntryInWelcome']
+    .forEach(id => { document.getElementById(id).style.display = on ? '' : 'none'; });
+  updatePreview();
+}
+
+// ── Lang pages (multi-select) ──
+function updateLangPages() {
+  const d = document.getElementById('ck-lang-dining').checked;
+  const m = document.getElementById('ck-lang-menu').checked;
+  let val = 'NONE';
+  if (d && m) val = 'BOTH';
+  else if (d) val = 'DINING_TYPE';
+  else if (m) val = 'MENU';
+  settings.languageDisplayPage = val;
+}
+
+// ── Color rows ──
+function renderColorRows() {
+  const container = document.getElementById('color-rows');
+  container.innerHTML = '';
+  const isPaper = version==='V3' && settings.kioskMenuTemplate==='PAPER';
+
+  COLOR_DEFS.forEach(def => {
+    const show = def.ver==='all'
+      || (def.ver==='v2' && version==='V2')
+      || (def.ver==='paper' && isPaper);
+    if (!show) return;
+
+    const cur = colorState[def.key];
+    const rgba = hexToRgba(cur.color, cur.opacity);
+    const row = document.createElement('div');
+    row.className = 'cr';
+    row.innerHTML = `
+      <div class="cl"><div class="cn">${def.name}</div><div class="cv">${def.key}</div></div>
+      <div class="csw"><div class="cswd" id="sw-${def.key}" style="background:${rgba}"></div>
+        <input type="color" id="pk-${def.key}" value="${cur.color}" onchange="onColorChange('${def.key}',this.value)">
+      </div>
+      <input class="hex" id="hx-${def.key}" value="${cur.color.toUpperCase()}"
+        onblur="onHexInput('${def.key}',this.value)" onkeydown="if(event.key==='Enter')onHexInput('${def.key}',this.value)">
+      <div class="opw">
+        <div class="opl"><span>透明度</span><span class="ov" id="op-${def.key}">${cur.opacity.toFixed(2)}</span></div>
+        <input type="range" min="0" max="1" step="0.01" value="${cur.opacity}" oninput="onOpacity('${def.key}',this.value)">
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+function onColorChange(key, hex) {
+  colorState[key].color = hex;
+  refreshSwatch(key);
+  updatePreview();
+}
+function onHexInput(key, val) {
+  const hex = val.startsWith('#') ? val : '#'+val;
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+    colorState[key].color = hex;
+    document.getElementById('pk-'+key).value = hex;
+    refreshSwatch(key);
+    updatePreview();
+  }
+}
+function onOpacity(key, val) {
+  colorState[key].opacity = parseFloat(val);
+  document.getElementById('op-'+key).textContent = parseFloat(val).toFixed(2);
+  refreshSwatch(key);
+  updatePreview();
+}
+function refreshSwatch(key) {
+  const el = document.getElementById('sw-'+key);
+  if (el) el.style.background = hexToRgba(colorState[key].color, colorState[key].opacity);
+}
+
+// ── Mock item data ──
+const MOCK_ITEMS = [
+  { id:'ki-0', emoji:'🍜', name:'招牌牛肉麵', price:'220' },
+  { id:'ki-1', emoji:'🍱', name:'日式便當',   price:'180' },
+  { id:'ki-2', emoji:'🍛', name:'咖哩飯',     price:'160' },
+  { id:'ki-3', emoji:'🥗', name:'沙拉輕食',   price:'120' },
+  { id:'ki-4', emoji:'🍔', name:'炸雞漢堡',   price:'145' },
+  { id:'ki-5', emoji:'🧋', name:'珍珠奶茶',   price:'70'  },
+];
+
+// 依每列欄數 pattern 渲染品項
+// e.g. [2,3,3,4] → 第1列2個、第2-3列各3個、第4列起4個
+function renderItemGrid(colPattern) {
+  const container = document.getElementById('pvitems');
+  container.innerHTML = '';
+  const GAP = 7;
+  let itemIdx = 0;
+  let rowIdx = 0;
+
+  while (itemIdx < MOCK_ITEMS.length) {
+    // 超出 pattern 定義的列數時，沿用最後一個值
+    const cols = colPattern[Math.min(rowIdx, colPattern.length - 1)];
+    const row = document.createElement('div');
+    row.className = 'ki-row';
+    const itemW = `calc((100% - ${GAP * (cols - 1)}px) / ${cols})`;
+
+    for (let col = 0; col < cols && itemIdx < MOCK_ITEMS.length; col++) {
+      const d = MOCK_ITEMS[itemIdx++];
+      const el = document.createElement('div');
+      el.className = 'ki';
+      el.id = d.id;
+      el.style.cssText = `flex:0 0 ${itemW};min-width:0`;
+      el.innerHTML = `<div class="ki-img">${d.emoji}</div>
+        <div class="ki-info">
+          <div class="ki-name">${d.name}</div>
+          <div class="ki-price">${d.price}</div>
+        </div>`;
+      row.appendChild(el);
+    }
+    container.appendChild(row);
+    rowIdx++;
+  }
+}
+
+// ── Category display settings ──
+const MOCK_CATEGORIES = [
+  { id: 'cat-0', name: '精選推薦' },
+  { id: 'cat-1', name: '主食' },
+  { id: 'cat-2', name: '小食' },
+  { id: 'cat-3', name: '飲料' },
+  { id: 'cat-4', name: '甜點' },
+];
+const CAT_DISPLAY_OPTIONS = ['2/3/3/4','1/2/2/2','2/4/4/4','3/4/4/4'];
+const DEFAULT_CAT_DISPLAY = '2/3/3/4';
+
+let categorySettings = {};       // working copy inside modal
+let savedCategorySettings = {};  // committed copy
+
+MOCK_CATEGORIES.forEach(cat => {
+  savedCategorySettings[cat.id] = DEFAULT_CAT_DISPLAY;
+});
+
+function updateRowSpanVisibility() {
+  const row = document.getElementById('sr-menuRowSpan');
+  if (row) row.style.display = settings.menuItemDistribution === 'FIX' ? '' : 'none';
+}
+
+function updateCategoryDep() {
+  const isByCategory = settings.menuDisplay === 'BY_CATEGORY';
+  const row = document.getElementById('sr-categorySettings');
+  if (row) {
+    // must also respect V2 visibility
+    row.classList.toggle('visible', isByCategory && version === 'V3');
+  }
+}
+
+function openCategoryModal() {
+  // clone saved state into working copy
+  categorySettings = JSON.parse(JSON.stringify(savedCategorySettings));
+  renderCategoryModal();
+  document.getElementById('cat-modal-overlay').classList.add('open');
+}
+
+function closeCategoryModal() {
+  document.getElementById('cat-modal-overlay').classList.remove('open');
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById('cat-modal-overlay')) closeCategoryModal();
+}
+
+function renderCategoryModal() {
+  const body = document.getElementById('cat-modal-body');
+  body.innerHTML = '';
+  MOCK_CATEGORIES.forEach(cat => {
+    const val = categorySettings[cat.id] || DEFAULT_CAT_DISPLAY;
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    row.innerHTML = `
+      <div>
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-badge">品項顯示方式</div>
+      </div>
+      <select class="s-sel" onchange="categorySettings['${cat.id}']=this.value">
+        ${CAT_DISPLAY_OPTIONS.map(opt =>
+          `<option value="${opt}" ${opt===val?'selected':''}>${opt}</option>`
+        ).join('')}
+      </select>`;
+    body.appendChild(row);
+  });
+}
+
+function saveCategoryModal() {
+  savedCategorySettings = JSON.parse(JSON.stringify(categorySettings));
+  updateCategorySummary();
+  closeCategoryModal();
+  updatePreview();
+  showToast('✓ 類別顯示設定已儲存');
+}
+
+function updateCategorySummary() {
+  const el = document.getElementById('cat-settings-summary');
+  if (!el) return;
+  const vals = MOCK_CATEGORIES.map(cat => savedCategorySettings[cat.id] || DEFAULT_CAT_DISPLAY);
+  const unique = [...new Set(vals)];
+  el.textContent = unique.length === 1
+    ? `全部類別：${unique[0]}`
+    : vals.map((v,i) => `${MOCK_CATEGORIES[i].name}：${v}`).join('、');
+}
+
+// ── Generic handlers ──
+function onTog(key, val) { settings[key]=val; updatePreview(); }
+function onSel(key, val) { settings[key]=val; updatePreview(); }
+function onNum(key, val) { settings[key]=parseFloat(val); updatePreview(); }
+function posToVal(v) { return {TOP:500,MID:1000,BOT:1500}[v]||1500; }
+
+// ── Preview ──
+function c(key) {
+  if (!colorState[key]) return 'transparent';
+  return hexToRgba(colorState[key].color, colorState[key].opacity);
+}
+
+function updatePreview() {
+  // Welcome
+  document.getElementById('pvwbg').style.background = c('maColorSecondary');
+  const wt = document.getElementById('pvwt');
+  const ws = document.getElementById('pvws');
+  const wb = document.getElementById('pvwb');
+  const showWel = settings.isShowWelcome;
+  wt.style.display = (showWel && settings.isShowWelcomeText) ? '' : 'none';
+  ws.style.display = (showWel && settings.isShowWelcomeText) ? '' : 'none';
+
+  const textCol = version==='V2' ? c('maColorTextDefault') : c('maColorPrimary');
+  wt.style.color = textCol;
+  ws.style.color = textCol;
+  wb.style.background = version==='V2' ? c('maColorBtnSecondary') : c('maColorSecondary');
+  wb.style.color = version==='V2' ? c('maColorTextDefault') : '#fff';
+
+  // Menu
+  const menu = document.getElementById('pv-menu');
+  menu.style.background = c('maColorPrimary');
+
+  const tb = document.getElementById('pvtb');
+  tb.style.background = c('maColorSecondary');
+  document.getElementById('pvsn').style.color = version==='V2' ? c('maColorTextDefault') : '#fff';
+
+  const bn = document.getElementById('pvbn');
+  bn.style.display = settings.isSeatEnabled ? '' : 'none';
+  if (version==='V2') { bn.style.background=c('maColorBtnPrimary'); bn.style.color=c('maColorTextPrimary'); }
+
+  // Categories
+  document.querySelectorAll('.kcat').forEach(btn => {
+    if (btn.classList.contains('active-cat')) {
+      btn.style.background = version==='V2' ? c('maColorBtnSecondary') : c('maColorTertiary')||c('maColorSecondary');
+      btn.style.color = version==='V2' ? c('maColorTextDefault') : '#fff';
+    } else {
+      btn.style.background = version==='V2' ? c('maColorBtnPrimary') : 'rgba(255,255,255,0.15)';
+      btn.style.color = version==='V2' ? c('maColorTextPrimary') : 'rgba(255,255,255,0.7)';
+    }
+  });
+
+  // Items — 決定 colPattern 優先序：
+  // 1. V3 + BY_CATEGORY → 讀該類別的 savedCategorySettings
+  // 2. menuItemDistribution 非 FIX → 直接 parse 成 pattern
+  // 3. FIX → 用 menuRowSpan uniform
+  let colPattern;
+  if (version === 'V3' && settings.menuDisplay === 'BY_CATEGORY') {
+    const activeCat = document.querySelector('.kcat.active-cat');
+    const catId = activeCat ? activeCat.id : 'cat-0';
+    const displayVal = savedCategorySettings[catId] || DEFAULT_CAT_DISPLAY;
+    colPattern = displayVal.split('/').map(Number);
+  } else if (settings.menuItemDistribution && settings.menuItemDistribution !== 'FIX') {
+    colPattern = settings.menuItemDistribution.split('/').map(Number);
+  } else {
+    const span = Math.max(2, Math.min(4, settings.menuRowSpan || 3));
+    colPattern = [span];
+  }
+  renderItemGrid(colPattern);
+
+  // 套用品項顏色（在 renderItemGrid 之後）
+  document.querySelectorAll('.ki').forEach(it => {
+    it.style.background = version==='V2' ? c('maColorSecondary') : 'rgba(255,255,255,0.08)';
+    it.querySelector('.ki-img').style.background = hexToRgba(colorState['maColorPrimary'].color, 0.4);
+    it.querySelector('.ki-name').style.color = version==='V2' ? c('maColorTextPrimary') : 'rgba(255,255,255,0.75)';
+    it.querySelector('.ki-price').style.color = version==='V2' ? c('maColorTextPrice') : '#F6EF04';
+  });
+
+  // Bottom
+  const bot = document.getElementById('pvbot');
+  const showCart = version==='V2' ? settings.isShowCartBeforePay : true;
+  bot.style.display = showCart ? '' : 'none';
+  bot.style.background = c('maColorSecondary');
+  document.getElementById('pvci').style.color = version==='V2' ? c('maColorTextSecondary') : '#fff';
+  document.getElementById('pvtot').style.color = version==='V2' ? c('maColorTextPrice') : '#F6EF04';
+  const obn = document.getElementById('pvobn');
+  obn.style.background = version==='V2' ? c('maColorBtnSecondary') : c('maColorSecondary');
+  obn.style.color = version==='V2' ? c('maColorTextDefault') : '#fff';
+  const cbn = document.getElementById('pvcbn');
+  cbn.style.background = version==='V2' ? c('maColorBtnDisable') : 'rgba(255,255,255,0.15)';
+  cbn.style.color = version==='V2' ? c('maColorTextPrimary') : 'rgba(255,255,255,0.6)';
+}
+
+// ── UI interaction ──
+function switchTab(name, el) {
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+function switchPreview(name, el) {
+  document.querySelectorAll('.pvt').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ks').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pv-'+name).classList.add('active');
+}
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('kcat')){
+    document.querySelectorAll('.kcat').forEach(b=>b.classList.remove('active-cat'));
+    e.target.classList.add('active-cat');
+    updatePreview();
+  }
+});
+
+// ── Save / Reset / Discard ──
+function saveSettings() {
+  savedColor = JSON.parse(JSON.stringify(colorState));
+  savedSettings = JSON.parse(JSON.stringify(settings));
+  showToast('✓ 設定已儲存');
+}
+function resetDefaults() {
+  colorState = JSON.parse(JSON.stringify(DEFAULTS_COLOR));
+  renderColorRows();
+  updatePreview();
+  showToast('已重設為預設值');
+}
+function discardChanges() {
+  colorState = JSON.parse(JSON.stringify(savedColor));
+  settings = JSON.parse(JSON.stringify(savedSettings));
+  renderColorRows();
+  updatePreview();
+  showToast('已捨棄未儲存的變更');
+}
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Utils ──
+function hexToRgba(hex,op){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${op})`;
+}
+
+// ── Init ──
+applyVersionVisibility();
+updateWelcomeDep();
+updateIdleDep();
+updateCategorySummary();
+renderColorRows();
+updatePreview();
+</script>
+</body>
+</html>
