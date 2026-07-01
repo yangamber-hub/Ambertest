@@ -163,12 +163,17 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:non
 .modal-head .modal-sub{font-size:11px;color:#6b7280;margin-top:2px}
 .modal-close{width:28px;height:28px;border-radius:6px;border:none;background:#f3f4f6;cursor:pointer;color:#6b7280;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .modal-close:hover{background:#e5e7eb}
-.modal-body{padding:8px 20px 12px;max-height:360px;overflow-y:auto}
-.cat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f9fafb;gap:12px}
+.modal-body{padding:0}
+.modal-menu-filter{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #f3f4f6;background:#f9fafb}
+.modal-menu-filter label{font-size:13px;color:#374151;font-weight:500;white-space:nowrap;min-width:28px}
+.modal-menu-filter .s-sel{flex:1}
+.modal-cat-list{padding:4px 20px 8px;max-height:320px;overflow-y:auto}
+.cat-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f9fafb;gap:12px}
 .cat-row:last-child{border-bottom:none}
-.cat-row .cat-name{font-size:13px;font-weight:500;color:#374151;flex:1}
-.cat-row .cat-badge{font-size:10px;color:#9ca3af;margin-top:1px}
-.cat-row .s-sel{min-width:130px}
+.cat-row-label{display:flex;flex-direction:column;gap:2px}
+.cat-row-name{font-size:13px;font-weight:600;color:#111827}
+.cat-row-sub{font-size:11px;color:#9ca3af}
+.cat-row .s-sel{min-width:140px}
 .modal-foot{padding:12px 20px;border-top:1px solid #f3f4f6;display:flex;gap:8px;justify-content:flex-end}
 
 /* Category settings button row */
@@ -252,16 +257,23 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:non
         <input class="s-num" type="number" min="0" max="1" step="0.1" value="1" onchange="onNum('menuCategoryImageAlpha',this.value)">
       </div>
 
-      <!-- V3 only -->
-      <div class="sr" data-v3-only id="sr-menuDisplay">
-        <div class="sl"><div class="sn">菜單顯示</div><div class="sk">menuDisplay</div><div class="sd">預設 / 依類別（依類別可設定各類別參數）</div></div>
-        <select class="s-sel" id="sel-menuDisplay" onchange="onSel('menuDisplay',this.value);updateCategoryDep()">
-          <option value="DEFAULT">預設</option>
-          <option value="BY_CATEGORY">依類別</option>
+
+      <!-- Common = 兩版都顯示 -->
+      <div class="sr" id="sr-menuItemDistribution">
+        <div class="sl"><div class="sn">菜單品項顯示方式</div><div class="sk">menuItemDistribution</div></div>
+        <select class="s-sel" onchange="onSel('menuItemDistribution',this.value)">
+          <option value="FIX_2">每行固定列數 2</option>
+          <option value="FIX_3" selected>每行固定列數 3</option>
+          <option value="FIX_4">每行固定列數 4</option>
+          <option value="1/2/2/2">1/2/2/2</option>
+          <option value="2/3/4">2/3/4</option>
+          <option value="2/3/3/4">2/3/3/4</option>
+          <option value="2/4/4/4">2/4/4/4</option>
+          <option value="3/4/4/4">3/4/4/4</option>
         </select>
       </div>
 
-      <!-- V3 + 依類別時才顯示 -->
+      <!-- V3 only -->
       <div class="cat-settings-row" data-v3-only id="sr-categorySettings">
         <div class="sl">
           <div class="sn">各類別顯示設定</div>
@@ -269,24 +281,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:non
           <div class="cat-settings-summary" id="cat-settings-summary">尚未設定</div>
         </div>
         <button class="cat-settings-btn" onclick="openCategoryModal()">設定 →</button>
-      </div>
-
-      <!-- Common = 兩版都顯示 -->
-      <div class="sr" id="sr-menuItemDistribution">
-        <div class="sl"><div class="sn">菜單品項顯示方式</div><div class="sk">menuItemDistribution</div></div>
-        <select class="s-sel" onchange="onSel('menuItemDistribution',this.value);updateRowSpanVisibility()">
-          <option value="FIX">固定</option>
-          <option value="2/3/4">2/3/4</option>
-          <option value="2/3/3/4">2/3/3/4</option>
-          <option value="1/2/2/2">1/2/2/2</option>
-          <option value="2/4/4/4">2/4/4/4</option>
-          <option value="3/4/4/4">3/4/4/4</option>
-        </select>
-      </div>
-
-      <div class="sr" id="sr-menuRowSpan">
-        <div class="sl"><div class="sn">菜單每列行數</div><div class="sk">menuRowSpan</div><div class="sd">顯示方式為「固定」時有效：2、3、4</div></div>
-        <input class="s-num" type="number" min="2" max="4" step="1" value="3" onchange="onNum('menuRowSpan',this.value);updatePreview()">
       </div>
 
       <div class="sr" id="sr-menuItemTextDistribution">
@@ -554,8 +548,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:non
       </div>
       <button class="modal-close" onclick="closeCategoryModal()">✕</button>
     </div>
-    <div class="modal-body" id="cat-modal-body">
-      <!-- rows injected by JS -->
+    <div class="modal-body">
+      <div class="modal-menu-filter">
+        <label>菜單</label>
+        <select class="s-sel" id="cat-modal-menu-sel" onchange="activeMenuModalId=this.value;renderCatList()">
+          <!-- options injected by JS -->
+        </select>
+      </div>
+      <div class="modal-cat-list" id="cat-modal-list"><!-- injected by JS --></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-s" onclick="closeCategoryModal()">取消</button>
@@ -607,9 +607,7 @@ let settings = {
   menuCategoryDimension:'TOP',
   menuCategoryDisplayType:'TEXT',
   menuCategoryImageAlpha:1,
-  menuDisplay:'DEFAULT',
-  menuItemDistribution:'FIX',
-  menuRowSpan:3,
+  menuItemDistribution:'FIX_3',
   menuItemTextDistribution:'TITLE',
   isAlwaysShowMenuDetail:false,
   isQuantityEditable:false,
@@ -662,8 +660,6 @@ function applyVersionVisibility() {
   });
   // category settings row depends on BOTH version AND menuDisplay — must run AFTER v3-only loop
   updateCategoryDep();
-  // menuRowSpan only relevant when distribution = FIX
-  updateRowSpanVisibility();
   // v2-v3 rows (present in both V2 and V3): always show
   document.querySelectorAll('[data-v2-v3]').forEach(el => {
     el.classList.add('visible');
@@ -759,6 +755,14 @@ function refreshSwatch(key) {
   if (el) el.style.background = hexToRgba(colorState[key].color, colorState[key].opacity);
 }
 
+// ── Mock menus ──
+const MOCK_MENUS = [
+  { id:'menu-0', name:'內用菜單' },
+  { id:'menu-1', name:'外帶菜單' },
+  { id:'menu-2', name:'松屋 UberEat' },
+];
+let activeMenuId = 'menu-0';   // 目前 KIOSK 預覽使用的菜單
+
 // ── Mock item data ──
 const MOCK_ITEMS = [
   { id:'ki-0', emoji:'🍜', name:'招牌牛肉麵', price:'220' },
@@ -811,36 +815,47 @@ const MOCK_CATEGORIES = [
   { id: 'cat-3', name: '飲料' },
   { id: 'cat-4', name: '甜點' },
 ];
-const CAT_DISPLAY_OPTIONS = ['2/3/3/4','1/2/2/2','2/4/4/4','3/4/4/4'];
-const DEFAULT_CAT_DISPLAY = '2/3/3/4';
-
-let categorySettings = {};       // working copy inside modal
-let savedCategorySettings = {};  // committed copy
-
-MOCK_CATEGORIES.forEach(cat => {
-  savedCategorySettings[cat.id] = DEFAULT_CAT_DISPLAY;
-});
-
-function updateRowSpanVisibility() {
-  const row = document.getElementById('sr-menuRowSpan');
-  if (row) row.style.display = settings.menuItemDistribution === 'FIX' ? '' : 'none';
+const CAT_DISPLAY_OPTIONS = [
+  { value:'FIX_2',   label:'每行固定列數 2' },
+  { value:'FIX_3',   label:'每行固定列數 3' },
+  { value:'FIX_4',   label:'每行固定列數 4' },
+  { value:'1/2/2/2', label:'1/2/2/2' },
+  { value:'2/3/4',   label:'2/3/4' },
+  { value:'2/3/3/4', label:'2/3/3/4' },
+  { value:'2/4/4/4', label:'2/4/4/4' },
+  { value:'3/4/4/4', label:'3/4/4/4' },
+];
+const DEFAULT_CAT_DISPLAY = 'FIX_3';
+function catDisplayLabel(val) {
+  const opt = CAT_DISPLAY_OPTIONS.find(o => o.value === val);
+  return opt ? opt.label : val;
 }
 
+// categorySettings[menuId][catId] = display value（working copy）
+// savedCategorySettings[menuId][catId] = committed copy
+let categorySettings = {};
+let savedCategorySettings = {};
+
+// 初始化每份菜單、每個類別的預設值
+MOCK_MENUS.forEach(menu => {
+  savedCategorySettings[menu.id] = {};
+  MOCK_CATEGORIES.forEach(cat => {
+    savedCategorySettings[menu.id][cat.id] = DEFAULT_CAT_DISPLAY;
+  });
+});
+
+let activeMenuModalId = null;  // 目前 modal 選中的菜單
+
 function updateCategoryDep() {
-  const isByCategory = settings.menuDisplay === 'BY_CATEGORY';
-  // 各類別顯示設定：V3 + 依類別才顯示
   const catRow = document.getElementById('sr-categorySettings');
-  if (catRow) catRow.classList.toggle('visible', isByCategory && version === 'V3');
-  // 依類別時，菜單品項顯示方式與菜單每列行數都不需要顯示
-  const distRow = document.getElementById('sr-menuItemDistribution');
-  if (distRow) distRow.style.display = isByCategory ? 'none' : '';
-  const spanRow = document.getElementById('sr-menuRowSpan');
-  if (spanRow) spanRow.style.display = (isByCategory || settings.menuItemDistribution !== 'FIX') ? 'none' : '';
+  if (catRow) catRow.classList.toggle('visible', version === 'V3');
 }
 
 function openCategoryModal() {
-  // clone saved state into working copy
+  // 深拷貝 saved → working
   categorySettings = JSON.parse(JSON.stringify(savedCategorySettings));
+  // 預設選中目前 KIOSK 正在使用的菜單
+  activeMenuModalId = activeMenuId;
   renderCategoryModal();
   document.getElementById('cat-modal-overlay').classList.add('open');
 }
@@ -854,23 +869,40 @@ function onOverlayClick(e) {
 }
 
 function renderCategoryModal() {
-  const body = document.getElementById('cat-modal-body');
-  body.innerHTML = '';
+  // 填入菜單下拉選單
+  const menuSel = document.getElementById('cat-modal-menu-sel');
+  menuSel.innerHTML = MOCK_MENUS.map(m =>
+    `<option value="${m.id}">${m.name}</option>`
+  ).join('');
+  menuSel.value = activeMenuModalId;
+  renderCatList();
+}
+
+function renderCatList() {
+  const list = document.getElementById('cat-modal-list');
+  // 確保 working copy 有此菜單的資料
+  if (!categorySettings[activeMenuModalId]) {
+    categorySettings[activeMenuModalId] = {};
+    MOCK_CATEGORIES.forEach(cat => {
+      categorySettings[activeMenuModalId][cat.id] = DEFAULT_CAT_DISPLAY;
+    });
+  }
+  list.innerHTML = '';
   MOCK_CATEGORIES.forEach(cat => {
-    const val = categorySettings[cat.id] || DEFAULT_CAT_DISPLAY;
+    const val = categorySettings[activeMenuModalId][cat.id] || DEFAULT_CAT_DISPLAY;
     const row = document.createElement('div');
     row.className = 'cat-row';
     row.innerHTML = `
-      <div>
-        <div class="cat-name">${cat.name}</div>
-        <div class="cat-badge">品項顯示方式</div>
+      <div class="cat-row-label">
+        <div class="cat-row-name">${cat.name}</div>
+        <div class="cat-row-sub">品項顯示方式</div>
       </div>
-      <select class="s-sel" onchange="categorySettings['${cat.id}']=this.value">
+      <select class="s-sel" onchange="categorySettings['${activeMenuModalId}']['${cat.id}']=this.value">
         ${CAT_DISPLAY_OPTIONS.map(opt =>
-          `<option value="${opt}" ${opt===val?'selected':''}>${opt}</option>`
+          `<option value="${opt.value}" ${opt.value===val?'selected':''}>${opt.label}</option>`
         ).join('')}
       </select>`;
-    body.appendChild(row);
+    list.appendChild(row);
   });
 }
 
@@ -885,11 +917,13 @@ function saveCategoryModal() {
 function updateCategorySummary() {
   const el = document.getElementById('cat-settings-summary');
   if (!el) return;
-  const vals = MOCK_CATEGORIES.map(cat => savedCategorySettings[cat.id] || DEFAULT_CAT_DISPLAY);
+  const menuData = savedCategorySettings[activeMenuId] || {};
+  const vals = MOCK_CATEGORIES.map(cat => menuData[cat.id] || DEFAULT_CAT_DISPLAY);
   const unique = [...new Set(vals)];
-  el.textContent = unique.length === 1
-    ? `全部類別：${unique[0]}`
-    : vals.map((v,i) => `${MOCK_CATEGORIES[i].name}：${v}`).join('、');
+  const menuName = (MOCK_MENUS.find(m => m.id === activeMenuId) || {}).name || '';
+  el.textContent = menuName + '：' + (unique.length === 1
+    ? `全部類別 ${catDisplayLabel(unique[0])}`
+    : vals.map((v,i) => `${MOCK_CATEGORIES[i].name} ${catDisplayLabel(v)}`).join('、'));
 }
 
 // ── Generic handlers ──
@@ -943,21 +977,22 @@ function updatePreview() {
     }
   });
 
-  // Items — 決定 colPattern 優先序：
-  // 1. V3 + BY_CATEGORY → 讀該類別的 savedCategorySettings
-  // 2. menuItemDistribution 非 FIX → 直接 parse 成 pattern
-  // 3. FIX → 用 menuRowSpan uniform
+  // Items — colPattern 決定邏輯：
+  // V3 → 各類別獨立設定（savedCategorySettings）優先，fallback 到 menuItemDistribution
+  // V2 → menuItemDistribution
+  function parseDistPattern(val) {
+    const m = (val||'FIX_3').match(/^FIX_(\d+)$/);
+    return m ? [parseInt(m[1])] : (val||'FIX_3').split('/').map(Number);
+  }
   let colPattern;
-  if (version === 'V3' && settings.menuDisplay === 'BY_CATEGORY') {
+  if (version === 'V3') {
     const activeCat = document.querySelector('.kcat.active-cat');
     const catId = activeCat ? activeCat.id : 'cat-0';
-    const displayVal = savedCategorySettings[catId] || DEFAULT_CAT_DISPLAY;
-    colPattern = displayVal.split('/').map(Number);
-  } else if (settings.menuItemDistribution && settings.menuItemDistribution !== 'FIX') {
-    colPattern = settings.menuItemDistribution.split('/').map(Number);
+    const menuData = (savedCategorySettings[activeMenuId] || {});
+    const displayVal = menuData[catId];
+    colPattern = displayVal ? parseDistPattern(displayVal) : parseDistPattern(settings.menuItemDistribution);
   } else {
-    const span = Math.max(2, Math.min(4, settings.menuRowSpan || 3));
-    colPattern = [span];
+    colPattern = parseDistPattern(settings.menuItemDistribution);
   }
   renderItemGrid(colPattern);
 
